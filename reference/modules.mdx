@@ -1,9 +1,9 @@
 ---
 title: Built-in Modules Reference
-description: Complete reference for Astro's built-in modules including astro:assets and astro:content
+description: Complete reference for Astro's built-in modules including astro:assets, astro:content, and more
 ---
 
-Astro provides several built-in modules that you can import into your project. This page documents the most commonly used modules.
+Astro provides several built-in modules that you can import into your project. This page documents the core modules available in every Astro project.
 
 ## astro:assets
 
@@ -483,3 +483,268 @@ const { Content, headings, remarkPluginFrontmatter } = await render(entry);
 
 <Content />
 ```
+
+## astro:actions
+
+The `astro:actions` module provides utilities for defining and calling type-safe backend actions.
+
+### Imports
+
+```js
+import {
+  defineAction,
+  actions,
+  ActionError,
+  isInputError,
+  isActionError,
+  getActionContext,
+  getActionPath,
+  ACTION_QUERY_PARAMS
+} from 'astro:actions';
+```
+
+### defineAction()
+
+<ParamField path="defineAction()" type="(config: { accept?, input?, handler }) => ActionClient">
+  Define a new server action with type-safe inputs and outputs.
+</ParamField>
+
+<ParamField path="accept" type="'form' | 'json'" default="'json'">
+  The expected input format.
+</ParamField>
+
+<ParamField path="input" type="ZodType">
+  Optional Zod validator for input validation.
+</ParamField>
+
+<ParamField path="handler" type="(input, context: ActionAPIContext) => any">
+  Server logic to run when the action is called.
+</ParamField>
+
+```ts title="src/actions/index.ts"
+import { defineAction } from 'astro:actions';
+import { z } from 'astro/zod';
+
+export const server = {
+  getGreeting: defineAction({
+    input: z.object({ name: z.string() }),
+    handler: async (input) => {
+      return `Hello, ${input.name}!`;
+    }
+  })
+};
+```
+
+### actions
+
+<ParamField path="actions" type="Record<string, ActionClient>">
+  Object containing all your defined actions. Used to call actions from client code.
+</ParamField>
+
+```astro
+<script>
+import { actions } from 'astro:actions';
+
+const { data, error } = await actions.getGreeting({ name: 'World' });
+</script>
+```
+
+### ActionError
+
+<ParamField path="ActionError" type="class">
+  Error class for throwing custom errors from action handlers.
+</ParamField>
+
+```ts
+import { ActionError } from 'astro:actions';
+
+throw new ActionError({
+  code: 'NOT_FOUND',
+  message: 'User not found'
+});
+```
+
+## astro:middleware
+
+The `astro:middleware` module provides utilities for creating middleware functions with type safety.
+
+### Imports
+
+```js
+import { defineMiddleware, sequence } from 'astro:middleware';
+```
+
+### defineMiddleware()
+
+<ParamField path="defineMiddleware()" type="(fn: MiddlewareHandler) => MiddlewareHandler">
+  Define middleware with proper TypeScript types for the context object.
+</ParamField>
+
+```ts title="src/middleware.ts"
+import { defineMiddleware } from 'astro:middleware';
+
+export const onRequest = defineMiddleware(async (context, next) => {
+  // Add custom logic
+  context.locals.user = await getUser(context.request);
+  return next();
+});
+```
+
+### sequence()
+
+<ParamField path="sequence()" type="(...handlers: MiddlewareHandler[]) => MiddlewareHandler">
+  Chain multiple middleware functions to run in sequence.
+</ParamField>
+
+```ts title="src/middleware.ts"
+import { sequence } from 'astro:middleware';
+
+const auth = defineMiddleware(async (context, next) => { /* ... */ });
+const logging = defineMiddleware(async (context, next) => { /* ... */ });
+
+export const onRequest = sequence(auth, logging);
+```
+
+## astro:transitions
+
+The `astro:transitions` module provides the View Transitions router and animation utilities.
+
+### Imports
+
+```js
+import { ClientRouter, fade, slide } from 'astro:transitions';
+import { navigate, supportsViewTransitions } from 'astro:transitions/client';
+```
+
+### ClientRouter
+
+<ParamField path="ClientRouter" type="Component">
+  Component that enables client-side routing with view transitions.
+</ParamField>
+
+```astro
+---
+import { ClientRouter } from 'astro:transitions';
+---
+<head>
+  <ClientRouter />
+</head>
+```
+
+### Animation functions
+
+<ParamField path="fade()" type="(options?) => TransitionAnimation">
+  Built-in fade animation for view transitions.
+</ParamField>
+
+<ParamField path="slide()" type="(options?) => TransitionAnimation">
+  Built-in slide animation for view transitions.
+</ParamField>
+
+### navigate()
+
+<ParamField path="navigate()" type="(href: string, options?) => void">
+  Programmatically navigate to a new page with view transitions.
+</ParamField>
+
+```astro
+<script>
+import { navigate } from 'astro:transitions/client';
+
+navigate('/about', { history: 'push' });
+</script>
+```
+
+## astro:i18n
+
+The `astro:i18n` module provides internationalization utilities for working with localized URLs.
+
+### Imports
+
+```js
+import {
+  getRelativeLocaleUrl,
+  getAbsoluteLocaleUrl,
+  getRelativeLocaleUrlList,
+  getAbsoluteLocaleUrlList,
+  getPathByLocale,
+  getLocaleByPath
+} from 'astro:i18n';
+```
+
+### getRelativeLocaleUrl()
+
+<ParamField path="getRelativeLocaleUrl()" type="(locale: string, path?: string, options?) => string">
+  Get a relative URL for a specific locale.
+</ParamField>
+
+```astro
+---
+import { getRelativeLocaleUrl } from 'astro:i18n';
+
+const frenchUrl = getRelativeLocaleUrl('fr', 'getting-started');
+// Returns: /fr/getting-started
+---
+```
+
+### getAbsoluteLocaleUrl()
+
+<ParamField path="getAbsoluteLocaleUrl()" type="(locale: string, path?: string, options?) => string">
+  Get an absolute URL for a specific locale (requires `site` config).
+</ParamField>
+
+## astro:env
+
+The `astro:env` module provides utilities for accessing environment variables with type safety.
+
+### Imports
+
+```js
+import { getSecret } from 'astro:env/server';
+```
+
+### getSecret()
+
+<ParamField path="getSecret()" type="(key: string) => string | undefined">
+  Safely access environment variables on the server.
+</ParamField>
+
+```ts
+import { getSecret } from 'astro:env/server';
+
+const apiKey = getSecret('API_KEY');
+```
+
+## astro:config
+
+The `astro:config` module provides access to your Astro configuration at runtime.
+
+### Imports
+
+```js
+// Client-side config
+import { site, base, trailingSlash } from 'astro:config/client';
+
+// Server-side config (includes all client config)
+import { srcDir, outDir, publicDir } from 'astro:config/server';
+```
+
+These modules expose your configuration as constants you can use in your code.
+
+## astro/zod
+
+Re-exports the Zod validation library for use in content collections and actions.
+
+```js
+import { z } from 'astro/zod';
+
+const schema = z.object({
+  title: z.string(),
+  pubDate: z.date(),
+  tags: z.array(z.string()),
+});
+```
+
+<Tip>
+For detailed Zod usage and validators, see the [official Zod documentation](https://zod.dev).
+</Tip>
