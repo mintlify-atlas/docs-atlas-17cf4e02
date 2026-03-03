@@ -1,0 +1,365 @@
+---
+title: Container API
+description: Complete reference for rendering Astro components in isolation using the experimental Container API.
+---
+
+<Note>
+  The Container API is experimental and subject to breaking changes. Consult the [Astro CHANGELOG](https://github.com/withastro/astro/blob/main/packages/astro/CHANGELOG.md) for updates.
+</Note>
+
+The Container API allows you to render Astro components in isolation outside of a full Astro application. This is useful for testing components, rendering components in non-Astro environments, or server-side rendering individual components.
+
+## When to use this API
+
+Use the Container API when you need to:
+
+- Test Astro components in isolation with Vitest or other test runners
+- Render Astro components in non-Vite environments (PHP, Elixir, Ruby, etc.)
+- Generate HTML from components for emails or documentation
+- Server-side render components independently of page routing
+- Create component previews or style guides
+
+## Creating a container
+
+Import and create a container instance:
+
+```js
+import { experimental_AstroContainer as AstroContainer } from 'astro/container';
+
+const container = await AstroContainer.create();
+```
+
+### Configuration options
+
+<ParamField path="streaming" type="boolean" default="false">
+  Enables HTML streaming for component rendering.
+
+  ```js
+  const container = await AstroContainer.create({
+    streaming: true
+  });
+  ```
+</ParamField>
+
+<ParamField path="renderers" type="AddServerRenderer[]" default="[]">
+  List of client renderers for UI framework components (React, Vue, Svelte, etc.).
+
+  ```js
+  import { getContainerRenderer } from '@astrojs/react';
+  import { loadRenderers } from 'astro:container';
+
+  const renderers = await loadRenderers([getContainerRenderer()]);
+  const container = await AstroContainer.create({ renderers });
+  ```
+</ParamField>
+
+## Rendering components
+
+### renderToString()
+
+Renders a component and returns HTML as a string:
+
+```ts
+renderToString(
+  component: AstroComponentFactory,
+  options?: ContainerRenderOptions
+): Promise<string>
+```
+
+```js
+import { experimental_AstroContainer as AstroContainer } from 'astro/container';
+import Card from '../src/components/Card.astro';
+
+const container = await AstroContainer.create();
+const html = await container.renderToString(Card);
+```
+
+### renderToResponse()
+
+Renders a component and returns a `Response` object:
+
+```ts
+renderToResponse(
+  component: AstroComponentFactory,
+  options?: ContainerRenderOptions
+): Promise<Response>
+```
+
+```js
+const container = await AstroContainer.create();
+const response = await container.renderToResponse(Card);
+const html = await response.text();
+```
+
+## Rendering options
+
+Both rendering methods accept an optional configuration object:
+
+<ParamField path="props" type="Record<string, unknown>">
+  Component properties to pass to the component.
+
+  ```js
+  const html = await container.renderToString(Card, {
+    props: { title: 'Hello World', count: 42 }
+  });
+  ```
+
+  ```astro title="Card.astro"
+  ---
+  interface Props {
+    title: string;
+    count: number;
+  }
+  const { title, count } = Astro.props;
+  ---
+  <div>{title}: {count}</div>
+  ```
+</ParamField>
+
+<ParamField path="slots" type="Record<string, any>">
+  Content to render in component slots.
+
+  ```js
+  // Single default slot
+  const html = await container.renderToString(Card, {
+    slots: { default: 'Card content' }
+  });
+
+  // Named slots
+  const html = await container.renderToString(Card, {
+    slots: {
+      header: 'Header content',
+      footer: 'Footer content'
+    }
+  });
+  ```
+
+  Render components in slots:
+
+  ```js
+  const header = await container.renderToString(CardHeader);
+  const html = await container.renderToString(Card, {
+    slots: { header }
+  });
+  ```
+</ParamField>
+
+<ParamField path="request" type="Request">
+  Request object with URL and headers information.
+
+  ```js
+  const html = await container.renderToString(Card, {
+    request: new Request('https://example.com/blog', {
+      headers: { 'x-custom-header': 'value' }
+    })
+  });
+  ```
+</ParamField>
+
+<ParamField path="params" type="Record<string, string | undefined>">
+  Route parameters for dynamic routes.
+
+  ```js
+  const html = await container.renderToString(BlogPost, {
+    params: {
+      locale: 'en',
+      slug: 'getting-started'
+    }
+  });
+  ```
+
+  ```astro title="[locale]/[slug].astro"
+  ---
+  const { locale, slug } = Astro.params;
+  ---
+  ```
+</ParamField>
+
+<ParamField path="locals" type="App.Locals">
+  Context locals for middleware and request lifecycle.
+
+  ```js
+  const html = await container.renderToString(Card, {
+    locals: {
+      user: { id: 1, name: 'Alice' },
+      isAuthenticated: true
+    }
+  });
+  ```
+
+  ```astro
+  ---
+  const { user } = Astro.locals;
+  ---
+  <p>Welcome, {user.name}!</p>
+  ```
+</ParamField>
+
+<ParamField path="routeType" type="'page' | 'endpoint'">
+  Specify that you're rendering an endpoint.
+
+  ```js
+  import * as Endpoint from '../src/pages/api/data.js';
+
+  const response = await container.renderToResponse(Endpoint, {
+    routeType: 'endpoint'
+  });
+  const json = await response.json();
+  ```
+
+  Test different HTTP methods:
+
+  ```js
+  const response = await container.renderToResponse(Endpoint, {
+    routeType: 'endpoint',
+    request: new Request('https://example.com/api', {
+      method: 'POST',
+      body: JSON.stringify({ data: 'value' })
+    })
+  });
+  ```
+</ParamField>
+
+<ParamField path="partial" type="boolean" default="true">
+  Whether to render as a page partial (without `<!DOCTYPE html>`).
+
+  ```js
+  // Render full page with DOCTYPE
+  const html = await container.renderToString(Page, {
+    partial: false
+  });
+  ```
+</ParamField>
+
+## Adding renderers
+
+For components using UI frameworks, you need to add renderers.
+
+### In Vite environments
+
+Use the `loadRenderers()` helper with `getContainerRenderer()`:
+
+```js
+import { experimental_AstroContainer as AstroContainer } from 'astro/container';
+import { getContainerRenderer as getReactRenderer } from '@astrojs/react';
+import { getContainerRenderer as getSvelteRenderer } from '@astrojs/svelte';
+import { loadRenderers } from 'astro:container';
+import ReactComponent from '../src/components/ReactComponent.jsx';
+
+const renderers = await loadRenderers([
+  getReactRenderer(),
+  getSvelteRenderer()
+]);
+
+const container = await AstroContainer.create({ renderers });
+const html = await container.renderToString(ReactComponent);
+```
+
+### In non-Vite environments
+
+Manually import and add server and client renderers:
+
+```js
+import { experimental_AstroContainer as AstroContainer } from 'astro/container';
+import reactRenderer from '@astrojs/react/server.js';
+import vueRenderer from '@astrojs/vue/server.js';
+
+const container = await AstroContainer.create();
+
+// Add server renderers for static components
+container.addServerRenderer({ renderer: vueRenderer });
+
+// Add server + client renderers for interactive components
+container.addServerRenderer({ renderer: reactRenderer });
+container.addClientRenderer({
+  name: '@astrojs/react',
+  entrypoint: '@astrojs/react/client.js'
+});
+```
+
+<Note>
+  **Server renderers must be added before client renderers.** This ensures proper rendering order and hydration.
+</Note>
+
+## Testing example
+
+Use the Container API with Vitest to test components:
+
+```js title="Card.test.js"
+import { experimental_AstroContainer as AstroContainer } from 'astro/container';
+import { expect, test } from 'vitest';
+import Card from '../src/components/Card.astro';
+
+test('Card renders with title', async () => {
+  const container = await AstroContainer.create();
+  const html = await container.renderToString(Card, {
+    props: { title: 'Test Card' }
+  });
+  
+  expect(html).toContain('Test Card');
+});
+
+test('Card renders slot content', async () => {
+  const container = await AstroContainer.create();
+  const html = await container.renderToString(Card, {
+    slots: { default: 'Card body content' }
+  });
+  
+  expect(html).toContain('Card body content');
+});
+```
+
+## Advanced usage
+
+### Rendering in PHP
+
+```php
+<?php
+// Load Node.js script that uses Container API
+exec('node render-component.js', $output);
+echo $output[0];
+?>
+```
+
+```js title="render-component.js"
+import { experimental_AstroContainer as AstroContainer } from 'astro/container';
+import reactRenderer from '@astrojs/react/server.js';
+import Component from './src/components/Component.astro';
+
+const container = await AstroContainer.create();
+container.addServerRenderer({ renderer: reactRenderer });
+
+const html = await container.renderToString(Component);
+console.log(html);
+```
+
+### Email generation
+
+```js
+import { experimental_AstroContainer as AstroContainer } from 'astro/container';
+import EmailTemplate from '../src/emails/Welcome.astro';
+
+const container = await AstroContainer.create();
+
+const emailHtml = await container.renderToString(EmailTemplate, {
+  props: {
+    userName: 'Alice',
+    verificationLink: 'https://example.com/verify/abc123'
+  }
+});
+
+// Send email with emailHtml
+```
+
+## TypeScript support
+
+```ts
+import type { AstroComponentFactory } from 'astro/runtime/server/index.js';
+import type { ContainerRenderOptions } from 'astro/container';
+
+const options: ContainerRenderOptions = {
+  props: { title: 'Hello' },
+  slots: { default: 'Content' },
+  request: new Request('https://example.com')
+};
+```

@@ -1,0 +1,304 @@
+---
+title: Middleware
+description: Learn how to use middleware in Astro to intercept requests and inject behaviors.
+---
+
+Middleware allows you to intercept requests and responses and inject behaviors dynamically every time a page or endpoint is about to be rendered.
+
+## Basic Usage
+
+<Steps>
+1. Create `src/middleware.js` or `src/middleware.ts`:
+
+   ```js
+   export function onRequest (context, next) {
+     // Intercept data from a request
+     // Modify properties in `locals`
+     context.locals.title = "New title";
+   
+     // Return a Response or call `next()`
+     return next();
+   }
+   ```
+
+2. Access data in any `.astro` file:
+
+   ```astro
+   ---
+   const data = Astro.locals;
+   ---
+   <h1>{data.title}</h1>
+   <p>{data.property}</p>
+   ```
+</Steps>
+
+## The Context Object
+
+The `context` object includes:
+
+- `locals` - Data shared between middleware, routes, and pages
+- `request` - The incoming request
+- `url` - The request URL
+- `cookies` - Cookie utilities
+- Other properties from the rendering process
+
+### Storing Data in context.locals
+
+`context.locals` is an object you can manipulate to share data:
+
+```js
+export function onRequest (context, next) {
+  context.locals.user.name = "John Wick";
+  context.locals.welcomeTitle = () => {
+    return "Welcome back " + context.locals.user.name;
+  };
+  
+  return next();
+}
+```
+
+Access it in components:
+
+```astro
+---
+const title = Astro.locals.welcomeTitle();
+const orders = Array.from(Astro.locals.orders.entries());
+---
+
+<h1>{title}</h1>
+<ul>
+  {orders.map(order => <li>{order.id}</li>)}
+</ul>
+```
+
+<Warning>
+`locals` cannot be overridden at runtime. Astro will throw an error if you try.
+</Warning>
+
+## Example: Redacting Information
+
+Replace sensitive information before rendering:
+
+```js
+export const onRequest = async (context, next) => {
+  const response = await next();
+  const html = await response.text();
+  const redactedHtml = html.replaceAll("PRIVATE INFO", "REDACTED");
+  
+  return new Response(redactedHtml, {
+    status: 200,
+    headers: response.headers
+  });
+};
+```
+
+## Type Safety
+
+Use `defineMiddleware()` for automatic typing:
+
+```ts
+import { defineMiddleware } from "astro:middleware";
+
+export const onRequest = defineMiddleware((context, next) => {
+  // context and next are automatically typed
+});
+```
+
+Or use JSDoc:
+
+```js
+/**
+ * @type {import("astro").MiddlewareHandler}
+ */
+export const onRequest = (context, next) => {
+  // Automatically typed
+};
+```
+
+### Typing Astro.locals
+
+Define types for `Astro.locals` in `env.d.ts`:
+
+```ts
+type User = {
+  id: number;
+  name: string;
+};
+
+declare namespace App {
+  interface Locals {
+    user: User;
+    welcomeTitle: () => string;
+    orders: Map<string, object>;
+  }
+}
+```
+
+## Chaining Middleware
+
+Use `sequence()` to chain multiple middleware functions:
+
+```js
+import { sequence } from "astro:middleware";
+
+async function validation(_, next) {
+  console.log("validation request");
+  const response = await next();
+  console.log("validation response");
+  return response;
+}
+
+async function auth(_, next) {
+  console.log("auth request");
+  const response = await next();
+  console.log("auth response");
+  return response;
+}
+
+async function greeting(_, next) {
+  console.log("greeting request");
+  const response = await next();
+  console.log("greeting response");
+  return response;
+}
+
+export const onRequest = sequence(validation, auth, greeting);
+```
+
+Console output:
+
+```sh
+validation request
+auth request
+greeting request
+greeting response
+auth response
+validation response
+```
+
+## Rewrites
+
+Use `context.rewrite()` to display different content without redirecting:
+
+```js
+import { isLoggedIn } from "~/auth.js"
+
+export function onRequest (context, next) {
+  if (!isLoggedIn(context)) {
+    return context.rewrite(new Request("/login", {
+      headers: {
+        "x-redirect-to": context.url.pathname
+      }
+    }));
+  }
+  
+  return next();
+}
+```
+
+### Rewrite with next()
+
+Pass a URL to `next()` to rewrite without re-executing middleware:
+
+```js
+export function onRequest (context, next) {
+  if (!isLoggedIn(context)) {
+    return next(new Request("/login", {
+      headers: {
+        "x-redirect-to": context.url.pathname
+      }
+    }));
+  }
+  
+  return next();
+}
+```
+
+### Chained Rewrites
+
+```js
+async function first(context, next) {
+  console.log(context.url.pathname); // "/blog"
+  return next("/");
+}
+
+async function second(context, next) {
+  console.log(context.url.pathname); // "/"
+  return next();
+}
+
+export const onRequest = sequence(first, second);
+```
+
+## Authentication Example
+
+```js
+export const onRequest = async (context, next) => {
+  const token = context.cookies.get('auth_token');
+  
+  if (!token) {
+    return context.redirect('/login');
+  }
+  
+  try {
+    const user = await verifyToken(token.value);
+    context.locals.user = user;
+  } catch (error) {
+    return context.redirect('/login');
+  }
+  
+  return next();
+};
+```
+
+## API Protection
+
+```js
+export const onRequest = async (context, next) => {
+  // Only protect API routes
+  if (context.url.pathname.startsWith('/api/')) {
+    const apiKey = context.request.headers.get('x-api-key');
+    
+    if (!apiKey || apiKey !== import.meta.env.API_KEY) {
+      return new Response('Unauthorized', { status: 401 });
+    }
+  }
+  
+  return next();
+};
+```
+
+## Logging
+
+```js
+export const onRequest = async (context, next) => {
+  const start = Date.now();
+  
+  const response = await next();
+  
+  const duration = Date.now() - start;
+  console.log(`${context.request.method} ${context.url.pathname} - ${duration}ms`);
+  
+  return response;
+};
+```
+
+## Error Pages
+
+Middleware runs for 404 and 500 pages when possible. However:
+
+- 404 pages: Middleware runs, but adapters may serve platform-specific pages
+- 500 pages: Middleware runs unless the error occurred in the middleware itself
+
+If middleware fails, you won't have access to `Astro.locals` in error pages.
+
+## Integration with Adapters
+
+Middleware works with all adapters. The adapter determines when and how middleware executes:
+
+- **Static sites**: Middleware runs at build time for prerendered pages
+- **SSR sites**: Middleware runs at request time for on-demand pages
+
+<Note>
+Some integrations may set properties in `locals`. Check integration docs to avoid conflicts.
+</Note>

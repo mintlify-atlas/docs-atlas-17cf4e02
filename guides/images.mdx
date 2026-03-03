@@ -1,0 +1,340 @@
+---
+title: Images and Assets
+description: Learn how to use images in Astro with optimization, responsive images, and the Image component.
+---
+
+Astro provides multiple ways to use images on your site, with built-in optimization, responsive images, and flexible storage options.
+
+## Image Components
+
+Astro provides two built-in components for optimized images:
+
+- `<Image />` - Optimizes a single image and transforms dimensions, file type, and quality
+- `<Picture />` - Generates multiple formats and sizes for responsive images
+
+### Where to Store Images
+
+**`src/` (recommended)**: Store local images here for automatic optimization and bundling.
+
+**`public/`**: For images you want served as-is without processing. Accessible via public URL paths.
+
+**Remote**: Store in a CMS or CDN and reference via full URL.
+
+## Using the Image Component
+
+Import and use the `<Image />` component for optimized images:
+
+```astro
+---
+import { Image } from 'astro:assets';
+import myImage from '../assets/my_image.png';
+---
+
+<Image src={myImage} alt="A description of my image." />
+<Image src="/images/remote-image.jpg" alt="Remote image" width="300" height="200" />
+<Image src="https://example.com/remote.jpg" alt="Remote" width="300" height="200" />
+```
+
+### Image Paths
+
+- **Local images in `src/`**: Import from relative path
+- **Public images**: Use URL path relative to `public/`
+- **Remote images**: Use full URL
+
+### Generated Output
+
+The `<Image />` component generates optimized HTML:
+
+```html
+<img
+  src="/_astro/my_image.hash.webp"
+  width="1600"
+  height="900"
+  decoding="async"
+  loading="lazy"
+  alt="A description of my image."
+/>
+```
+
+## Using the Picture Component
+
+Generate multiple formats with `<Picture />`:
+
+```astro
+---
+import { Picture } from 'astro:assets';
+import myImage from '../assets/my_image.png';
+---
+
+<Picture 
+  src={myImage} 
+  formats={['avif', 'webp']} 
+  alt="A description" 
+/>
+```
+
+Output:
+
+```html
+<picture>
+  <source srcset="/_astro/my_image.hash.avif" type="image/avif" />
+  <source srcset="/_astro/my_image.hash.webp" type="image/webp" />
+  <img src="/_astro/my_image.hash.png" alt="A description" />
+</picture>
+```
+
+## Responsive Images
+
+Make images responsive with layout properties:
+
+```astro
+---
+import { Image } from 'astro:assets';
+import myImage from '../assets/my_image.png';
+---
+
+<Image 
+  src={myImage} 
+  alt="Responsive image" 
+  layout="constrained" 
+  width={800} 
+  height={600} 
+/>
+```
+
+### Generated Responsive Output
+
+```html
+<img
+  src="/_astro/my_image.hash3.webp"
+  srcset="/_astro/my_image.hash1.webp 640w,
+          /_astro/my_image.hash2.webp 750w,
+          /_astro/my_image.hash3.webp 800w"
+  sizes="(min-width: 800px) 800px, 100vw"
+  alt="Responsive image"
+  width="800"
+  height="600"
+/>
+```
+
+### Configure Global Responsive Images
+
+Set default behavior in `astro.config.mjs`:
+
+```js
+export default defineConfig({
+  image: {
+    layout: 'constrained',
+    responsiveStyles: true,
+  }
+});
+```
+
+## Images in Markdown
+
+Use standard Markdown syntax:
+
+```md
+![A starry night sky](../assets/stars.png)
+![Public image](/images/stars.png)
+![Remote image](https://example.com/image.png)
+```
+
+Local and remote images are automatically optimized. Public images are not.
+
+## Images in MDX
+
+MDX supports both components and Markdown syntax:
+
+```mdx
+import { Image } from 'astro:assets';
+import rocket from '../assets/rocket.png';
+
+<Image src={rocket} alt="A rocketship in space." />
+<img src={rocket.src} alt="A rocketship in space." />
+![A rocketship in space](../assets/rocket.png)
+```
+
+## SVG Components
+
+Import SVG files as Astro components:
+
+```astro
+---
+import Logo from './path/to/svg/file.svg';
+---
+
+<Logo />
+<Logo width={64} height={64} fill="currentColor" />
+```
+
+### SVG Type Safety
+
+```astro
+---
+import type { SvgComponent } from "astro/types";
+import HomeIcon from './Home.svg';
+
+interface Link {
+  icon: SvgComponent;
+  text: string;
+}
+---
+```
+
+## Unprocessed Images with `<img>`
+
+Use the HTML `<img>` tag for complete control without optimization:
+
+### Local Images
+
+```astro
+---
+import myDog from '../../images/pets/local-dog.jpg';
+---
+<img src={myDog.src} width={myDog.width} height={myDog.height} alt="A dog." />
+```
+
+### Public Images
+
+```astro
+<img src="/images/public-cat.jpg" alt="A cat." />
+```
+
+### Remote Images
+
+```astro
+<img src="https://example.com/remote-cat.jpg" alt="A cat." />
+```
+
+## Images from CMS or CDN
+
+Use full URLs with Astro image components:
+
+```astro
+<Image src="https://cdn.example.com/image.jpg" alt="Description" width="800" height="600" />
+```
+
+Some CDNs provide their own SDKs (e.g., Cloudinary's `CldImage` component).
+
+## Authorizing Remote Images
+
+Protect your site by configuring allowed image sources:
+
+```ts
+// astro.config.mjs
+export default defineConfig({
+  image: {
+    domains: ["astro.build"],
+  }
+});
+```
+
+Or use patterns:
+
+```ts
+export default defineConfig({
+  image: {
+    remotePatterns: [{ protocol: "https" }],
+  }
+});
+```
+
+## Images in Content Collections
+
+Declare images in frontmatter:
+
+```md
+---
+title: "My Post"
+cover: "./cover.jpeg"
+coverAlt: "A sunset"
+---
+```
+
+Validate with the `image()` helper:
+
+```ts
+import { defineCollection, z } from "astro:content";
+
+const blog = defineCollection({
+  schema: ({ image }) => z.object({
+    title: z.string(),
+    cover: image(),
+    coverAlt: z.string(),
+  }),
+});
+```
+
+Use in components:
+
+```astro
+---
+import { Image } from "astro:assets";
+import { getCollection } from "astro:content";
+const posts = await getCollection("blog");
+---
+
+{posts.map((post) => (
+  <Image src={post.data.cover} alt={post.data.coverAlt} />
+))}
+```
+
+## Generating Images with getImage()
+
+For advanced use cases, use `getImage()` to generate images programmatically:
+
+```astro
+---
+import { getImage } from "astro:assets";
+import myBackground from "../background.png";
+
+const optimizedBackground = await getImage({src: myBackground});
+---
+
+<div style={`background-image: url(${optimizedBackground.src});`}></div>
+```
+
+## Default Image Service
+
+Astro uses Sharp for image optimization by default. You may need to install it manually with strict package managers:
+
+```bash
+pnpm add sharp
+```
+
+### No-op Passthrough Service
+
+For adapters that don't support optimization:
+
+```js
+import { defineConfig, passthroughImageService } from 'astro/config';
+
+export default defineConfig({
+  image: {
+    service: passthroughImageService()
+  }
+});
+```
+
+## Image Caching
+
+Processed images are cached in `./node_modules/.astro/` (configurable via `cacheDir`).
+
+Remote images respect HTTP caching headers and support revalidation using `Last-Modified` and `ETag` headers.
+
+## Alt Text
+
+Always provide descriptive alt text for accessibility:
+
+```astro
+<Image src={myImage} alt="A detailed description of the image" />
+```
+
+For decorative images:
+
+```astro
+<Image src={decorative} alt="" />
+```
+
+The `alt` attribute is required for `<Image />` and `<Picture />` components.

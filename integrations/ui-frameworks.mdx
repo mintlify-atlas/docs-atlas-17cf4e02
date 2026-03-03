@@ -1,0 +1,306 @@
+---
+title: UI Framework Integrations
+description: Add support for React, Vue, Svelte, and other UI frameworks in your Astro project.
+---
+
+Astro supports multiple UI frameworks including React, Vue, Svelte, Solid, Preact, and more. Framework integrations enable rendering and client-side hydration for your components.
+
+## Available Framework Integrations
+
+<CardGroup cols={2}>
+  <Card title="React" icon="react">
+    The most popular JavaScript library for building user interfaces
+  </Card>
+  <Card title="Vue" icon="vuejs">
+    Progressive JavaScript framework for building web interfaces
+  </Card>
+  <Card title="Svelte" icon="svelte">
+    Compile-time framework for building web applications
+  </Card>
+  <Card title="Solid" icon="solid">
+    Declarative JavaScript library for building user interfaces
+  </Card>
+</CardGroup>
+
+## React
+
+The `@astrojs/react` integration enables rendering and client-side hydration for your React components.
+
+### Installation
+
+<Tabs>
+  <Tab title="Automatic">
+    ```bash
+    npx astro add react
+    ```
+  </Tab>
+  <Tab title="Manual">
+    Install the package:
+    ```bash
+    npm install @astrojs/react
+    ```
+    
+    Install peer dependencies:
+    ```bash
+    npm install react react-dom @types/react @types/react-dom
+    ```
+    
+    Add to your config:
+    ```js title="astro.config.mjs"
+    import { defineConfig } from 'astro/config';
+    import react from '@astrojs/react';
+    
+    export default defineConfig({
+      integrations: [react()],
+    });
+    ```
+    
+    Update `tsconfig.json`:
+    ```json title="tsconfig.json"
+    {
+      "compilerOptions": {
+        "jsx": "react-jsx",
+        "jsxImportSource": "react"
+      }
+    }
+    ```
+  </Tab>
+</Tabs>
+
+### Usage Example
+
+```jsx title="src/components/Counter.jsx"
+import { useState } from 'react';
+
+export default function Counter() {
+  const [count, setCount] = useState(0);
+  
+  return (
+    <button onClick={() => setCount(count + 1)}>
+      Count: {count}
+    </button>
+  );
+}
+```
+
+```astro title="src/pages/index.astro"
+---
+import Counter from '../components/Counter.jsx';
+---
+
+<Counter client:load />
+```
+
+### Configuration Options
+
+#### Multiple JSX Frameworks
+
+When using multiple JSX frameworks, specify which files belong to which framework:
+
+```js title="astro.config.mjs"
+import { defineConfig } from 'astro/config';
+import react from '@astrojs/react';
+import preact from '@astrojs/preact';
+
+export default defineConfig({
+  integrations: [
+    react({
+      include: ['**/react/*'],
+    }),
+    preact({
+      include: ['**/preact/*'],
+    }),
+  ],
+});
+```
+
+## Vue
+
+The `@astrojs/vue` integration enables rendering and client-side hydration for your Vue 3 components.
+
+### Installation
+
+<Tabs>
+  <Tab title="Automatic">
+    ```bash
+    npx astro add vue
+    ```
+  </Tab>
+  <Tab title="Manual">
+    Install the package:
+    ```bash
+    npm install @astrojs/vue
+    ```
+    
+    Install peer dependencies:
+    ```bash
+    npm install vue
+    ```
+    
+    Add to your config:
+    ```js title="astro.config.mjs"
+    import { defineConfig } from 'astro/config';
+    import vue from '@astrojs/vue';
+    
+    export default defineConfig({
+      integrations: [vue()],
+    });
+    ```
+  </Tab>
+</Tabs>
+
+### Usage Example
+
+```vue title="src/components/Counter.vue"
+<script setup>
+import { ref } from 'vue';
+const count = ref(0);
+</script>
+
+<template>
+  <button @click="count++">
+    Count: {{ count }}
+  </button>
+</template>
+```
+
+```astro title="src/pages/index.astro"
+---
+import Counter from '../components/Counter.vue';
+---
+
+<Counter client:load />
+```
+
+### Configuration Options
+
+#### App Entrypoint
+
+Extend the Vue app instance to add plugins:
+
+```js title="astro.config.mjs"
+import { defineConfig } from 'astro/config';
+import vue from '@astrojs/vue';
+
+export default defineConfig({
+  integrations: [vue({ appEntrypoint: '/src/pages/_app' })],
+});
+```
+
+```ts title="src/pages/_app.ts"
+import type { App } from 'vue';
+import i18nPlugin from 'my-vue-i18n-plugin';
+
+export default (app: App) => {
+  app.use(i18nPlugin);
+};
+```
+
+#### Vue JSX
+
+Enable Vue JSX support:
+
+```js title="astro.config.mjs"
+import { defineConfig } from 'astro/config';
+import vue from '@astrojs/vue';
+
+export default defineConfig({
+  integrations: [vue({ jsx: true })],
+});
+```
+
+## Svelte
+
+The `@astrojs/svelte` integration enables rendering and client-side hydration for your Svelte 5 components.
+
+### Installation
+
+<Tabs>
+  <Tab title="Automatic">
+    ```bash
+    npx astro add svelte
+    ```
+  </Tab>
+  <Tab title="Manual">
+    Install the package:
+    ```bash
+    npm install @astrojs/svelte
+    ```
+    
+    Install peer dependencies:
+    ```bash
+    npm install svelte typescript
+    ```
+    
+    Add to your config:
+    ```js title="astro.config.mjs"
+    import { defineConfig } from 'astro/config';
+    import svelte from '@astrojs/svelte';
+    
+    export default defineConfig({
+      integrations: [svelte()],
+    });
+    ```
+    
+    Create Svelte config:
+    ```js title="svelte.config.js"
+    import { vitePreprocess } from '@astrojs/svelte';
+    
+    export default {
+      preprocess: vitePreprocess(),
+    }
+    ```
+  </Tab>
+</Tabs>
+
+### Usage Example
+
+```svelte title="src/components/Counter.svelte"
+<script>
+  let count = 0;
+</script>
+
+<button on:click={() => count++}>
+  Count: {count}
+</button>
+```
+
+```astro title="src/pages/index.astro"
+---
+import Counter from '../components/Counter.svelte';
+---
+
+<Counter client:load />
+```
+
+## Client Directives
+
+All framework components support client directives for hydration:
+
+- `client:load` - Hydrate immediately on page load
+- `client:idle` - Hydrate when the browser is idle
+- `client:visible` - Hydrate when the component enters the viewport
+- `client:media` - Hydrate when a media query matches
+- `client:only` - Skip server rendering, only render on client
+
+```astro
+<ReactComponent client:load />
+<VueComponent client:idle />
+<SvelteComponent client:visible />
+```
+
+## Mixing Frameworks
+
+You can use multiple frameworks in the same project and even on the same page:
+
+```astro title="src/pages/index.astro"
+---
+import ReactCounter from '../components/ReactCounter.jsx';
+import VueCounter from '../components/VueCounter.vue';
+import SvelteCounter from '../components/SvelteCounter.svelte';
+---
+
+<ReactCounter client:load />
+<VueCounter client:load />
+<SvelteCounter client:load />
+```

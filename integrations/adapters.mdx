@@ -1,0 +1,377 @@
+---
+title: Deployment Adapters
+description: Deploy your Astro site to Netlify, Vercel, and other platforms with SSR adapters.
+---
+
+Adapters allow Astro to deploy your on-demand rendered routes and features to deployment platforms. Use adapters to enable server-side rendering (SSR) on platforms like Netlify, Vercel, Cloudflare, and more.
+
+## When to Use Adapters
+
+You need an adapter if:
+
+- You're using on-demand rendering (SSR mode)
+- You want to use server islands
+- You want to use Astro Actions
+- You want to use platform-specific features (image optimization, edge functions, etc.)
+
+For static sites (`output: 'static'`), you typically don't need an adapter unless you're using platform-specific features.
+
+## Available Adapters
+
+<CardGroup cols={2}>
+  <Card title="Netlify" icon="netlify">
+    Deploy to Netlify with support for edge functions and serverless rendering
+  </Card>
+  <Card title="Vercel" icon="vercel">
+    Deploy to Vercel with image optimization and edge middleware
+  </Card>
+  <Card title="Cloudflare" icon="cloudflare">
+    Deploy to Cloudflare Pages and Workers
+  </Card>
+  <Card title="Node" icon="node">
+    Deploy to any Node.js-compatible host
+  </Card>
+</CardGroup>
+
+## Netlify Adapter
+
+The `@astrojs/netlify` adapter enables on-demand rendering on Netlify, including server islands, actions, and sessions.
+
+### Installation
+
+<Tabs>
+  <Tab title="Automatic">
+    ```bash
+    npx astro add netlify
+    ```
+  </Tab>
+  <Tab title="Manual">
+    Install the package:
+    ```bash
+    npm install @astrojs/netlify
+    ```
+    
+    Add to your config:
+    ```js title="astro.config.mjs"
+    import { defineConfig } from 'astro/config';
+    import netlify from '@astrojs/netlify';
+    
+    export default defineConfig({
+      adapter: netlify(),
+    });
+    ```
+  </Tab>
+</Tabs>
+
+### Key Features
+
+#### Netlify Image CDN
+
+The adapter uses Netlify's Image CDN by default to optimize images:
+
+```js title="astro.config.mjs"
+import { defineConfig } from 'astro/config';
+import netlify from '@astrojs/netlify';
+
+export default defineConfig({
+  adapter: netlify({
+    imageCDN: true, // Enabled by default
+  }),
+  image: {
+    domains: ['example.com'],
+  },
+});
+```
+
+#### Edge Middleware
+
+Run Astro middleware on Netlify Edge Functions:
+
+```js title="astro.config.mjs"
+import { defineConfig } from 'astro/config';
+import netlify from '@astrojs/netlify';
+
+export default defineConfig({
+  adapter: netlify({
+    edgeMiddleware: true,
+  }),
+});
+```
+
+#### Accessing Edge Context
+
+Access Netlify edge context in your pages:
+
+```astro title="src/pages/index.astro"
+---
+const {
+  geo: { city },
+} = Astro.locals.netlify.context;
+---
+
+<h1>Hello from {city}!</h1>
+```
+
+#### Sessions with Netlify Blobs
+
+Astro automatically configures Netlify Blobs for session storage:
+
+```js title="astro.config.mjs"
+import { defineConfig } from 'astro/config';
+import netlify from '@astrojs/netlify';
+
+export default defineConfig({
+  adapter: netlify(),
+  // Sessions automatically use Netlify Blobs
+});
+```
+
+#### Caching Pages
+
+Cache on-demand rendered pages for better performance:
+
+```js title="astro.config.mjs"
+import { defineConfig } from 'astro/config';
+import netlify from '@astrojs/netlify';
+
+export default defineConfig({
+  adapter: netlify({
+    cacheOnDemandPages: true,
+  }),
+});
+```
+
+Control caching per page:
+
+```astro title="src/pages/index.astro"
+---
+Astro.response.headers.set('CDN-Cache-Control', 'public, max-age=45, must-revalidate');
+---
+```
+
+## Vercel Adapter
+
+The `@astrojs/vercel` adapter enables on-demand rendering on Vercel, including server islands, actions, and sessions.
+
+### Installation
+
+<Tabs>
+  <Tab title="Automatic">
+    ```bash
+    npx astro add vercel
+    ```
+  </Tab>
+  <Tab title="Manual">
+    Install the package:
+    ```bash
+    npm install @astrojs/vercel
+    ```
+    
+    Add to your config:
+    ```js title="astro.config.mjs"
+    import { defineConfig } from 'astro/config';
+    import vercel from '@astrojs/vercel';
+    
+    export default defineConfig({
+      adapter: vercel(),
+    });
+    ```
+  </Tab>
+</Tabs>
+
+### Key Features
+
+#### Vercel Image Optimization
+
+Enable Vercel's Image Optimization API:
+
+```js title="astro.config.mjs"
+import { defineConfig } from 'astro/config';
+import vercel from '@astrojs/vercel';
+
+export default defineConfig({
+  adapter: vercel({
+    imageService: true,
+    imagesConfig: {
+      sizes: [320, 640, 1280],
+    },
+  }),
+});
+```
+
+#### Incremental Static Regeneration (ISR)
+
+Cache on-demand rendered pages with ISR:
+
+```js title="astro.config.mjs"
+import { defineConfig } from 'astro/config';
+import vercel from '@astrojs/vercel';
+
+export default defineConfig({
+  adapter: vercel({
+    isr: true,
+  }),
+});
+```
+
+With custom expiration:
+
+```js title="astro.config.mjs"
+import { defineConfig } from 'astro/config';
+import vercel from '@astrojs/vercel';
+
+export default defineConfig({
+  adapter: vercel({
+    isr: {
+      expiration: 60 * 60 * 24, // 1 day in seconds
+    },
+  }),
+});
+```
+
+Exclude specific paths from caching:
+
+```js title="astro.config.mjs"
+import { defineConfig } from 'astro/config';
+import vercel from '@astrojs/vercel';
+
+export default defineConfig({
+  adapter: vercel({
+    isr: {
+      exclude: [
+        '/preview',
+        '/auth/[page]',
+        /^/api/.+/
+      ]
+    }
+  }),
+});
+```
+
+#### Edge Middleware
+
+Run Astro middleware on Vercel Edge Functions:
+
+```js title="astro.config.mjs"
+import { defineConfig } from 'astro/config';
+import vercel from '@astrojs/vercel';
+
+export default defineConfig({
+  adapter: vercel({
+    edgeMiddleware: true,
+  }),
+});
+```
+
+#### Web Analytics
+
+Enable Vercel Web Analytics:
+
+```js title="astro.config.mjs"
+import { defineConfig } from 'astro/config';
+import vercel from '@astrojs/vercel';
+
+export default defineConfig({
+  adapter: vercel({
+    webAnalytics: {
+      enabled: true,
+    },
+  }),
+});
+```
+
+#### Sessions with Redis
+
+Configure session storage with a Redis database:
+
+```js title="astro.config.mjs"
+import { defineConfig } from 'astro/config';
+import vercel from '@astrojs/vercel';
+
+export default defineConfig({
+  adapter: vercel(),
+  session: {
+    driver: 'redis',
+    options: {
+      url: process.env.REDIS_URL,
+    },
+  },
+});
+```
+
+## Configuration Options
+
+Both adapters support additional configuration options:
+
+### Include/Exclude Files
+
+Control which files are bundled with your function:
+
+<Tabs>
+  <Tab title="Netlify">
+    ```js title="astro.config.mjs"
+    import { defineConfig } from 'astro/config';
+    import netlify from '@astrojs/netlify';
+    
+    export default defineConfig({
+      adapter: netlify({
+        includeFiles: ['./my-data.json'],
+        excludeFiles: ['./src/some_big_file.jpg'],
+      }),
+    });
+    ```
+  </Tab>
+  <Tab title="Vercel">
+    ```js title="astro.config.mjs"
+    import { defineConfig } from 'astro/config';
+    import vercel from '@astrojs/vercel';
+    
+    export default defineConfig({
+      adapter: vercel({
+        includeFiles: ['./my-data.json'],
+        excludeFiles: ['./src/some_big_file.jpg'],
+      }),
+    });
+    ```
+  </Tab>
+</Tabs>
+
+### Max Duration
+
+Set maximum execution time for serverless functions:
+
+```js title="astro.config.mjs"
+import { defineConfig } from 'astro/config';
+import vercel from '@astrojs/vercel';
+
+export default defineConfig({
+  adapter: vercel({
+    maxDuration: 60, // seconds
+  }),
+});
+```
+
+## Deployment
+
+After adding an adapter, deploy your site:
+
+<Tabs>
+  <Tab title="Netlify">
+    Build and deploy:
+    ```bash
+    astro build
+    netlify deploy --prod
+    ```
+    
+    Or connect your Git repository in the Netlify dashboard.
+  </Tab>
+  <Tab title="Vercel">
+    Build and deploy:
+    ```bash
+    astro build
+    vercel deploy --prebuilt
+    ```
+    
+    Or connect your Git repository in the Vercel dashboard.
+  </Tab>
+</Tabs>

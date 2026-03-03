@@ -1,0 +1,215 @@
+---
+title: Markdown and MDX
+description: Learn how to create content using Markdown and MDX in Astro.
+---
+
+Astro includes built-in support for Markdown files that can include frontmatter YAML to define custom metadata like a title, description, and tags. You can also use MDX files to include components and JSX expressions in your Markdown content.
+
+## Markdown Files
+
+Markdown is commonly used to author text-heavy content like blog posts and documentation. Astro supports standard Markdown files (`.md`) with GitHub-flavored Markdown and SmartyPants plugins applied by default.
+
+### Organizing Files
+
+Local Markdown files can be kept anywhere within your `src/` directory. Files in `src/pages/` will automatically become pages on your site, while files elsewhere can be imported or queried using content collections.
+
+```md
+---
+title: 'My Blog Post'
+author: 'Jane Doe'
+---
+
+Here is my **great** post!
+```
+
+### Using Frontmatter
+
+Markdown files support YAML frontmatter to define metadata:
+
+```md
+---
+title: 'The greatest post'
+author: 'Ben'
+date: 2024-01-15
+---
+
+Content goes here...
+```
+
+## Importing Markdown
+
+You can import Markdown files directly in `.astro` files using ESM import syntax:
+
+```astro
+---
+import * as myPost from './posts/post-1.md';
+const posts = Object.values(import.meta.glob('./posts/*.md', { eager: true }));
+---
+
+<h1>{myPost.frontmatter.title}</h1>
+<p>Written by: {myPost.frontmatter.author}</p>
+{myPost.compiledContent()}
+```
+
+### Available Properties
+
+When importing Markdown, you have access to these properties:
+
+- `frontmatter` - Contains all YAML frontmatter data
+- `file` - The absolute file path
+- `url` - The URL of the page (if in `src/pages/`)
+- `Content` - A component that renders the full content
+- `rawContent()` - Returns the raw Markdown string
+- `compiledContent()` - Returns the compiled HTML string
+- `getHeadings()` - Returns an array of all headings
+
+## MDX Integration
+
+For additional functionality like using components inside Markdown, install the MDX integration:
+
+```bash
+npm install @astrojs/mdx
+```
+
+MDX files (`.mdx`) allow you to import and use Astro components alongside Markdown syntax:
+
+```mdx
+---
+title: My MDX Page
+---
+import { Image } from 'astro:assets';
+import Button from '../components/Button.astro';
+
+# My Page
+
+<Button>Click me!</Button>
+
+<Image src={myImage} alt="Description" />
+```
+
+## Markdown Plugins
+
+Astro uses remark and rehype plugins to extend Markdown functionality. You can add plugins in your `astro.config.mjs`:
+
+```js
+import { defineConfig } from 'astro/config';
+import remarkToc from 'remark-toc';
+import rehypeAccessibleEmojis from 'rehype-accessible-emojis';
+
+export default defineConfig({
+  markdown: {
+    remarkPlugins: [remarkToc],
+    rehypePlugins: [rehypeAccessibleEmojis],
+  },
+});
+```
+
+### Customizing Plugins
+
+You can pass options to plugins using nested arrays:
+
+```js
+export default {
+  markdown: {
+    remarkPlugins: [
+      [remarkToc, { heading: 'contents', maxDepth: 3 }]
+    ],
+  },
+};
+```
+
+### Modifying Frontmatter Programmatically
+
+You can add frontmatter properties to all Markdown files using a plugin:
+
+<Steps>
+1. Create a plugin that modifies `file.data.astro.frontmatter`:
+
+   ```js
+   export function exampleRemarkPlugin() {
+     return function (tree, file) {
+       file.data.astro.frontmatter.customProperty = 'Generated property';
+     }
+   }
+   ```
+
+2. Apply the plugin to your config:
+
+   ```js
+   import { exampleRemarkPlugin } from './example-remark-plugin.mjs';
+   
+   export default defineConfig({
+     markdown: {
+       remarkPlugins: [exampleRemarkPlugin]
+     },
+   });
+   ```
+</Steps>
+
+## Heading IDs
+
+Markdown headings automatically get anchor links using `github-slugger`:
+
+```markdown
+## Introduction
+
+I can link to [my conclusion](#conclusion) on the same page.
+
+## Conclusion
+```
+
+You can customize heading IDs by adding a rehype plugin or using Astro's built-in `rehypeHeadingIds` plugin.
+
+## Markdown Pages
+
+Files in `src/pages/` automatically become pages. Astro will render the Markdown to HTML at that route.
+
+### Layout Property
+
+Use the special `layout` frontmatter property to wrap your Markdown in a layout:
+
+```markdown
+---
+layout: ../../layouts/BlogPostLayout.astro
+title: My Blog Post
+author: Jane Doe
+---
+
+Post content here...
+```
+
+The layout component receives frontmatter via `Astro.props.frontmatter`:
+
+```astro
+---
+const {frontmatter} = Astro.props;
+---
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>{frontmatter.title}</title>
+  </head>
+  <body>
+    <h1>{frontmatter.title}</h1>
+    <p>By {frontmatter.author}</p>
+    <slot />
+  </body>
+</html>
+```
+
+## Remote Markdown
+
+Astro's built-in Markdown support doesn't process remote Markdown. For remote content, use:
+
+- A content collections loader with `renderMarkdown()` function
+- Your own Markdown parser from npm (like `marked`)
+
+```astro
+---
+import { marked } from 'marked';
+const response = await fetch('https://example.com/content.md');
+const markdown = await response.text();
+const content = marked.parse(markdown);
+---
+<article set:html={content} />
+```

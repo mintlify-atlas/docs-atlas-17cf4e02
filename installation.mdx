@@ -1,0 +1,309 @@
+---
+title: Install Astro
+description: How to install Astro and start a new project.
+---
+
+The `create astro` CLI command is the fastest way to start a new Astro project from scratch. It will walk you through every step of setting up your new Astro project and allow you to choose from a few different official starter templates.
+
+You can also run the CLI command with the `template` flag to begin your project using any existing theme or starter template. Explore the [themes and starters showcase](https://astro.build/themes/) where you can browse themes for blogs, portfolios, documentation sites, landing pages, and more!
+
+<Tip>
+Prefer to try Astro in your browser? Visit [astro.new](https://astro.new/) to browse our starter templates and spin up a new Astro project without ever leaving your browser.
+</Tip>
+
+## Prerequisites
+
+Before you begin, make sure you have the following installed:
+
+- **Node.js** - `v18.20.8` or `v20.3.0`, `v22.0.0` or higher. (`v19` and `v21` are not supported.)
+- **Text editor** - We recommend [VS Code](https://code.visualstudio.com/) with the [Official Astro extension](https://marketplace.visualstudio.com/items?itemName=astro-build.astro-vscode).
+- **Terminal** - Astro is accessed through its command-line interface (CLI).
+
+## Browser compatibility
+
+Astro is built with Vite which targets browsers with modern JavaScript support by default. For a complete reference, you can see the [list of currently supported browser versions in Vite](https://vite.dev/guide/build.html#browser-compatibility).
+
+## Install from the CLI wizard
+
+You can run `create astro` anywhere on your machine, so there's no need to create a new empty directory for your project before you begin. If you don't have an empty directory yet for your new project, the wizard will help create one for you automatically.
+
+<Steps>
+  <Step title="Run the install wizard">
+    Run the following command in your terminal to start the install wizard:
+
+    <CodeGroup>
+      ```bash npm
+      # create a new project with npm
+      npm create astro@latest
+      ```
+
+      ```bash yarn
+      # create a new project with yarn
+      yarn create astro
+      ```
+
+      ```bash pnpm
+      # create a new project with pnpm
+      pnpm create astro@latest
+      ```
+    </CodeGroup>
+
+    If all goes well, you will see a success message followed by some recommended next steps.
+  </Step>
+
+  <Step title="Navigate to your project">
+    Now that your project has been created, you can `cd` into your new project directory to begin using Astro.
+
+    ```bash
+    cd my-astro-project
+    ```
+  </Step>
+
+  <Step title="Install dependencies">
+    If you skipped the "Install dependencies?" step during the CLI wizard, then be sure to install your dependencies before continuing.
+
+    <CodeGroup>
+      ```bash npm
+      npm install
+      ```
+
+      ```bash yarn
+      yarn install
+      ```
+
+      ```bash pnpm
+      pnpm install
+      ```
+    </CodeGroup>
+  </Step>
+
+  <Step title="Start the dev server">
+    You can now start the Astro dev server and see a live preview of your project while you build!
+
+    <CodeGroup>
+      ```bash npm
+      npm run dev
+      ```
+
+      ```bash yarn
+      yarn dev
+      ```
+
+      ```bash pnpm
+      pnpm dev
+      ```
+    </CodeGroup>
+  </Step>
+</Steps>
+
+## CLI installation flags
+
+You can run the `create astro` command with additional flags to customize the setup process or your new project.
+
+### Add integrations
+
+You can start a new Astro project and install any official integrations or community integrations that support the `astro add` command at the same time by passing the `--add` argument.
+
+<CodeGroup>
+  ```bash npm
+  # create a new project with React and Partytown
+  npm create astro@latest -- --add react --add partytown
+  ```
+
+  ```bash yarn
+  # create a new project with React and Partytown
+  yarn create astro --add react --add partytown
+  ```
+
+  ```bash pnpm
+  # create a new project with React and Partytown
+  pnpm create astro@latest --add react --add partytown
+  ```
+</CodeGroup>
+
+### Use a theme or starter template
+
+You can start a new Astro project based on an [official example](https://github.com/withastro/astro/tree/main/examples) or the `main` branch of any GitHub repository by passing a `--template` argument to the `create astro` command.
+
+<CodeGroup>
+  ```bash npm
+  # create a new project with an official example
+  npm create astro@latest -- --template <example-name>
+
+  # create a new project based on a GitHub repository's main branch
+  npm create astro@latest -- --template <github-username>/<github-repo>
+  ```
+
+  ```bash yarn
+  # create a new project with an official example
+  yarn create astro --template <example-name>
+  
+  # create a new project based on a GitHub repository's main branch
+  yarn create astro --template <github-username>/<github-repo>
+  ```
+
+  ```bash pnpm
+  # create a new project with an official example
+  pnpm create astro@latest --template <example-name>
+  
+  # create a new project based on a GitHub repository's main branch
+  pnpm create astro@latest --template <github-username>/<github-repo>
+  ```
+</CodeGroup>
+
+By default, this command will use the template repository's `main` branch. To use a different branch name, pass it as part of the `--template` argument: `<github-username>/<github-repo>#<branch>`.
+
+## Manual setup
+
+This guide will walk you through the steps to manually install and configure a new Astro project if you prefer not to use the automatic `create astro` CLI tool.
+
+<Steps>
+  <Step title="Create your directory">
+    Create an empty directory with the name of your project, and then navigate into it.
+
+    ```bash
+    mkdir my-astro-project
+    cd my-astro-project
+    ```
+
+    Once you are in your new directory, create your project `package.json` file. This is how you will manage your project dependencies, including Astro.
+
+    <CodeGroup>
+      ```bash npm
+      npm init --yes
+      ```
+
+      ```bash yarn
+      yarn init --yes
+      ```
+
+      ```bash pnpm
+      pnpm init
+      ```
+    </CodeGroup>
+  </Step>
+
+  <Step title="Install Astro">
+    First, install the Astro project dependencies inside your project.
+
+    <Warning>
+      Astro must be installed locally, not globally. Make sure you are *not* running `npm install -g astro`, `pnpm add -g astro`, or `yarn add global astro`.
+    </Warning>
+
+    <CodeGroup>
+      ```bash npm
+      npm install astro
+      ```
+
+      ```bash yarn
+      yarn add astro
+      ```
+
+      ```bash pnpm
+      pnpm add astro
+      ```
+    </CodeGroup>
+
+    Then, replace any placeholder "scripts" section of your `package.json` with the following:
+
+    ```json package.json
+    {
+      "scripts": {
+        "dev": "astro dev",
+        "build": "astro build",
+        "preview": "astro preview"
+      }
+    }
+    ```
+
+    You'll use these scripts later in the guide to start Astro and run its different commands.
+  </Step>
+
+  <Step title="Create your first page">
+    In your text editor, create a new file in your directory at `src/pages/index.astro`. This will be your first Astro page in the project.
+
+    For this guide, copy and paste the following code snippet (including `---` dashes) into your new file:
+
+    ```astro src/pages/index.astro
+    ---
+    // Welcome to Astro! Everything between these triple-dash code fences
+    // is your "component frontmatter". It never runs in the browser.
+    console.log('This runs in your terminal, not the browser!');
+    ---
+    <!-- Below is your "component template." It's just HTML, but with
+         some magic sprinkled in to help you build great templates. -->
+    <html>
+      <body>
+        <h1>Hello, World!</h1>
+      </body>
+    </html>
+    <style>
+      h1 {
+        color: orange;
+      }
+    </style>
+    ```
+  </Step>
+
+  <Step title="Create your first static asset">
+    You will also want to create a `public/` directory to store your static assets. Astro will always include these assets in your final build, so you can safely reference them from inside your component templates.
+
+    In your text editor, create a new file in your directory at `public/robots.txt`. `robots.txt` is a simple file that most sites will include to tell search bots like Google how to treat your site.
+
+    For this guide, copy and paste the following code snippet into your new file:
+
+    ```txt public/robots.txt
+    # Example: Allow all bots to scan and index your site.
+    # Full syntax: https://developers.google.com/search/docs/advanced/robots/create-robots-txt
+    User-agent: *
+    Allow: /
+    ```
+  </Step>
+
+  <Step title="Create astro.config.mjs">
+    Astro is configured using `astro.config.mjs`. This file is optional if you do not need to configure Astro, but you may wish to create it now.
+
+    Create `astro.config.mjs` at the root of your project, and copy the code below into it:
+
+    ```js astro.config.mjs
+    import { defineConfig } from "astro/config";
+
+    // https://astro.build/config
+    export default defineConfig({});
+    ```
+
+    If you want to include UI framework components such as React, Svelte, etc. or use other tools such as MDX or Partytown in your project, here is where you will manually import and configure integrations.
+  </Step>
+
+  <Step title="Add TypeScript support">
+    TypeScript is configured using `tsconfig.json`. Even if you don't write TypeScript code, this file is important so that tools like Astro and VS Code know how to understand your project. Some features (like npm package imports) aren't fully supported in the editor without a `tsconfig.json` file.
+
+    If you do intend to write TypeScript code, using Astro's `strict` or `strictest` template is recommended. You can view and compare the three template configurations at [astro/tsconfigs/](https://github.com/withastro/astro/blob/main/packages/astro/tsconfigs/).
+
+    Create `tsconfig.json` at the root of your project, and copy the code below into it. (You can use `base`, `strict`, or `strictest` for your TypeScript template):
+
+    ```json tsconfig.json
+    {
+      "extends": "astro/tsconfigs/base"
+    }
+    ```
+  </Step>
+
+  <Step title="Next steps">
+    If you have followed the steps above, your project directory should now look like this:
+
+    ```
+    ├── node_modules/
+    ├── public/
+    │   └── robots.txt
+    ├── src/
+    │   └── pages/
+    │       └── index.astro
+    ├── astro.config.mjs
+    ├── package.json
+    └── tsconfig.json
+    ```
+
+    Congratulations! You're now set up to use Astro. You can now start the Astro dev server and see a live preview of your project while you build!
+  </Step>
+</Steps>

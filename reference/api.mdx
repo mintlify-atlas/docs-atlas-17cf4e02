@@ -1,0 +1,445 @@
+---
+title: Runtime API Reference
+description: Complete reference for Astro's runtime context API
+---
+
+When rendering a page, Astro provides a runtime API specific to the current render. This includes useful information such as the current page URL as well as APIs to perform actions like redirecting to another page.
+
+In `.astro` components, this context is available from the `Astro` global object. Endpoint functions are also called with this same context object as their first argument.
+
+## Astro Global
+
+The `Astro` global object is available to all `.astro` files and provides access to the render context.
+
+### Astro.props
+
+<ParamField path="Astro.props" type="object">
+  Object containing any values that have been passed as component attributes or from `getStaticPaths()`.
+</ParamField>
+
+```astro title="src/components/Heading.astro"
+---
+const { title, date } = Astro.props;
+---
+<div>
+  <h1>{title}</h1>
+  <p>{date}</p>
+</div>
+```
+
+```astro title="src/pages/index.astro"
+---
+import Heading from '../components/Heading.astro';
+---
+<Heading title="My First Post" date="09 Aug 2022" />
+```
+
+For dynamic routes, `props` also contains values passed from `getStaticPaths()`:
+
+```astro title="src/pages/posts/[id].astro"
+---
+export function getStaticPaths() {
+  return [
+    { params: { id: '1' }, props: { author: 'Blu' } },
+    { params: { id: '2' }, props: { author: 'Erika' } },
+    { params: { id: '3' }, props: { author: 'Matthew' } }
+  ];
+}
+
+const { id } = Astro.params;
+const { author } = Astro.props;
+---
+```
+
+### Astro.params
+
+<ParamField path="Astro.params" type="object">
+  Object containing the values of dynamic route segments matched for a request.
+</ParamField>
+
+In static builds, this will be the `params` returned by `getStaticPaths()` used for prerendering dynamic routes:
+
+```astro title="src/pages/posts/[id].astro"
+---
+export function getStaticPaths() {
+  return [
+    { params: { id: '1' } },
+    { params: { id: '2' } },
+    { params: { id: '3' } }
+  ];
+}
+const { id } = Astro.params;
+---
+<h1>{id}</h1>
+```
+
+When routes are rendered on demand, `params` can be any value matching the path segments in the dynamic route pattern:
+
+```astro title="src/pages/posts/[id].astro"
+---
+import { getPost } from '../api';
+
+const post = await getPost(Astro.params.id);
+
+if (!post) {
+  return Astro.redirect("/404")
+}
+---
+<html>
+  <h1>{post.name}</h1>
+</html>
+```
+
+### Astro.url
+
+<ParamField path="Astro.url" type="URL">
+  A URL object constructed from the current `request.url` value. Useful for interacting with individual properties of the request URL.
+</ParamField>
+
+```astro title="src/pages/index.astro"
+<h1>The current URL is: {Astro.url}</h1>
+<h1>The current URL pathname is: {Astro.url.pathname}</h1>
+<h1>The current URL origin is: {Astro.url.origin}</h1>
+```
+
+You can also use `url` to create new URLs:
+
+```astro title="src/pages/index.astro"
+---
+const canonicalURL = new URL(Astro.url.pathname, Astro.site);
+const socialImageURL = new URL('/images/preview.png', Astro.url);
+---
+<link rel="canonical" href={canonicalURL} />
+<meta property="og:image" content={socialImageURL} />
+```
+
+### Astro.site
+
+<ParamField path="Astro.site" type="URL | undefined">
+  A URL made from `site` in your Astro config. Returns `undefined` if not configured.
+</ParamField>
+
+```astro title="src/pages/index.astro"
+<link
+  rel="alternate"
+  type="application/rss+xml"
+  title="Your Site's Title"
+  href={new URL("rss.xml", Astro.site)}
+/>
+```
+
+### Astro.clientAddress
+
+<ParamField path="Astro.clientAddress" type="string">
+  The IP address of the request. Only available for routes rendered on demand.
+</ParamField>
+
+```astro title="src/pages/ip-address.astro"
+---
+export const prerender = false;
+---
+<div>Your IP address is: <span class="address">{Astro.clientAddress}</span></div>
+```
+
+### Astro.generator
+
+<ParamField path="Astro.generator" type="string">
+  The current version of Astro your project is running, in the format `"Astro v5.x.x"`.
+</ParamField>
+
+```astro title="src/pages/site-info.astro"
+<html>
+  <head>
+    <meta name="generator" content={Astro.generator} />
+  </head>
+  <body>
+    <footer>
+      <p>Built with <a href="https://astro.build">{Astro.generator}</a></p>
+    </footer>
+  </body>
+</html>
+```
+
+### Astro.request
+
+<ParamField path="Astro.request" type="Request">
+  A standard Request object. Can be used to get the `url`, `headers`, `method`, and even the body of the request.
+</ParamField>
+
+```astro title="src/pages/index.astro"
+<p>Received a {Astro.request.method} request to "{Astro.request.url}".</p>
+<p>Received request headers:</p>
+<p><code>{JSON.stringify(Object.fromEntries(Astro.request.headers))}</code></p>
+```
+
+### Astro.response
+
+<ParamField path="Astro.response" type="ResponseInit & { readonly headers: Headers }">
+  A standard ResponseInit object used to set the `status`, `statusText`, and `headers` for a page's response.
+</ParamField>
+
+Response properties:
+- `status` - The numeric status code (e.g., `200`)
+- `statusText` - The status message (e.g., `'OK'`)
+- `headers` - A Headers instance for setting HTTP headers
+
+```astro
+---
+if (condition) {
+  Astro.response.status = 404;
+  Astro.response.statusText = 'Not found';
+}
+
+Astro.response.headers.set('Set-Cookie', 'a=b; Path=/;');
+---
+```
+
+### Astro.redirect()
+
+<ParamField path="Astro.redirect()" type="(path: string, status?: number) => Response">
+  Returns a Response object that allows you to redirect to another page.
+</ParamField>
+
+<ParamField path="path" type="string" required>
+  The URL path to redirect to.
+</ParamField>
+
+<ParamField path="status" type="number" default="302">
+  The HTTP status code for the redirect.
+</ParamField>
+
+<ResponseField name="Response" type="Response">
+  A Response object for the redirect.
+</ResponseField>
+
+```astro title="src/pages/account.astro"
+---
+import { isLoggedIn } from '../utils';
+
+const cookie = Astro.request.headers.get('cookie');
+
+if (!isLoggedIn(cookie)) {
+  return Astro.redirect('/login');
+}
+---
+<p>User information</p>
+```
+
+### Astro.rewrite()
+
+<ParamField path="Astro.rewrite()" type="(rewritePayload: string | URL | Request) => Promise<Response>">
+  Serves content from a different URL or path without redirecting the browser to a new page.
+</ParamField>
+
+<ParamField path="rewritePayload" type="string | URL | Request" required>
+  The path, URL, or Request to rewrite to.
+</ParamField>
+
+<ResponseField name="Response" type="Promise<Response>">
+  A Promise that resolves to the Response from the rewritten path.
+</ResponseField>
+
+```astro title="src/pages/index.astro"
+---
+return Astro.rewrite("/login")
+---
+```
+
+With a URL type:
+
+```astro title="src/pages/blog/index.astro"
+---
+return Astro.rewrite(new URL("../", Astro.url))
+---
+```
+
+With a Request for complete control:
+
+```astro title="src/pages/blog/index.astro"
+---
+return Astro.rewrite(new Request(new URL("../", Astro.url), {
+  headers: {
+    "x-custom-header": JSON.stringify(Astro.locals.someValue)
+  }
+}))
+---
+```
+
+### Astro.locals
+
+<ParamField path="Astro.locals" type="object">
+  An object used to store and access arbitrary information during the lifecycle of a request.
+</ParamField>
+
+Middleware functions can both read and write the values:
+
+```ts title="src/middleware.ts"
+import type { MiddlewareHandler } from 'astro';
+
+export const onRequest: MiddlewareHandler = ({ locals }, next) => {
+  if (!locals.title) {
+    locals.title = "Default Title";
+  }
+  return next();
+}
+```
+
+Components can read values from `locals`:
+
+```astro title="src/pages/Orders.astro"
+---
+const title = Astro.locals.title;
+---
+<h1>{title}</h1>
+```
+
+### Astro.cookies
+
+<ParamField path="Astro.cookies" type="AstroCookies">
+  Utilities for reading and manipulating cookies for routes rendered on demand.
+</ParamField>
+
+#### cookies.get()
+
+<ParamField path="cookies.get()" type="(key: string, options?: AstroCookieGetOptions) => AstroCookie | undefined">
+  Gets the cookie as an AstroCookie object.
+</ParamField>
+
+#### cookies.has()
+
+<ParamField path="cookies.has()" type="(key: string, options?: AstroCookieGetOptions) => boolean">
+  Checks whether a cookie exists.
+</ParamField>
+
+#### cookies.set()
+
+<ParamField path="cookies.set()" type="(key: string, value: string | object, options?: AstroCookieSetOptions) => void">
+  Sets the cookie key to the given value.
+</ParamField>
+
+#### cookies.delete()
+
+<ParamField path="cookies.delete()" type="(key: string, options?: AstroCookieDeleteOptions) => void">
+  Invalidates a cookie by setting the expiration date in the past.
+</ParamField>
+
+### Astro.session
+
+<ParamField path="Astro.session" type="AstroSession | undefined">
+  Allows data to be stored between requests for routes rendered on demand.
+</ParamField>
+
+#### session.get()
+
+<ParamField path="session.get()" type="(key: string) => Promise<any>">
+  Returns the value of the given key in the session.
+</ParamField>
+
+```astro title="src/components/Cart.astro"
+---
+const cart = await Astro.session?.get('cart');
+---
+<button>🛒 {cart?.length}</button>
+```
+
+#### session.set()
+
+<ParamField path="session.set()" type="(key: string, value: any, options?: { ttl: number }) => void">
+  Sets the value of the given key in the session.
+</ParamField>
+
+```astro title="src/pages/products/[slug].astro"
+---
+const { slug } = Astro.params;
+Astro.session?.set('lastViewedProduct', slug);
+---
+```
+
+#### session.regenerate()
+
+<ParamField path="session.regenerate()" type="() => void">
+  Regenerates the session ID to prevent session fixation attacks.
+</ParamField>
+
+```astro title="src/pages/welcome.astro"
+---
+Astro.session?.regenerate();
+---
+```
+
+#### session.destroy()
+
+<ParamField path="session.destroy()" type="() => void">
+  Destroys the session, deleting the cookie and the object from the backend.
+</ParamField>
+
+```astro title="src/pages/logout.astro"
+---
+Astro.session?.destroy();
+return Astro.redirect('/login');
+---
+```
+
+### Astro.getActionResult()
+
+<ParamField path="Astro.getActionResult()" type="(action: TAction) => ActionReturnType<TAction> | undefined">
+  Returns the result of an Action submission.
+</ParamField>
+
+```astro title="src/pages/index.astro"
+---
+import { actions } from 'astro:actions';
+
+const result = Astro.getActionResult(actions.logout);
+---
+
+<form action={actions.logout}>
+  <button type="submit">Log out</button>
+</form>
+{result?.error && <p>Failed to log out. Please try again.</p>}
+```
+
+### Astro.callAction()
+
+<ParamField path="Astro.callAction()" type="(action: TAction, input: any) => Promise<ActionReturnType<TAction>>">
+  Calls an Action handler directly from your Astro component.
+</ParamField>
+
+```astro title="src/pages/index.astro"
+---
+import { actions } from 'astro:actions';
+
+const { data, error } = await Astro.callAction(actions.logout, { userId: '123' });
+---
+```
+
+## APIContext
+
+The same properties available on `Astro` are also available on the `context` object passed to endpoint functions and middleware.
+
+```ts title="src/pages/api/users.ts"
+import type { APIContext } from 'astro';
+
+export function GET({ params, request, url, redirect }: APIContext) {
+  return new Response(
+    JSON.stringify({ message: 'Hello from ' + url.pathname })
+  );
+}
+```
+
+```ts title="src/pages/posts/[id].json.ts"
+import type { APIContext } from 'astro';
+
+export function getStaticPaths() {
+  return [
+    { params: { id: '1' }, props: { author: 'Blu' } },
+    { params: { id: '2' }, props: { author: 'Erika' } }
+  ];
+}
+
+export function GET({ props }: APIContext) {
+  return new Response(
+    JSON.stringify({ author: props.author }),
+  );
+}
+```

@@ -1,0 +1,170 @@
+---
+title: Integrations Overview
+description: Extend Astro with integrations for UI frameworks, adapters, and tools.
+---
+
+Astro integrations add new functionality and behaviors for your project with only a few lines of code. You can use an official integration, integrations built by the community, or even build a custom integration yourself.
+
+## What Integrations Can Do
+
+Integrations can:
+
+- Unlock React, Vue, Svelte, Solid, and other popular UI frameworks
+- Enable on-demand rendering with an SSR adapter
+- Integrate tools like MDX and Partytown with a few lines of code
+- Add new features to your project, like automatic sitemap generation
+- Write custom code that hooks into the build process, dev server, and more
+
+<Note>
+Browse or search the complete set of hundreds of official and community integrations in the [Astro integrations directory](https://astro.build/integrations/).
+</Note>
+
+## Installing Integrations
+
+### Automatic Setup
+
+Astro includes an `astro add` command to automate the setup of official integrations. Run the command using your package manager:
+
+<Tabs>
+  <Tab title="npm">
+    ```bash
+    npx astro add react
+    ```
+  </Tab>
+  <Tab title="pnpm">
+    ```bash
+    pnpm astro add react
+    ```
+  </Tab>
+  <Tab title="yarn">
+    ```bash
+    yarn astro add react
+    ```
+  </Tab>
+</Tabs>
+
+You can add multiple integrations at the same time:
+
+<Tabs>
+  <Tab title="npm">
+    ```bash
+    npx astro add react sitemap partytown
+    ```
+  </Tab>
+  <Tab title="pnpm">
+    ```bash
+    pnpm astro add react sitemap partytown
+    ```
+  </Tab>
+  <Tab title="yarn">
+    ```bash
+    yarn astro add react sitemap partytown
+    ```
+  </Tab>
+</Tabs>
+
+### Manual Installation
+
+Astro integrations are always added through the `integrations` property in your `astro.config.mjs` file.
+
+**Step 1:** Install the integration package
+
+<Tabs>
+  <Tab title="npm">
+    ```bash
+    npm install @astrojs/sitemap
+    ```
+  </Tab>
+  <Tab title="pnpm">
+    ```bash
+    pnpm add @astrojs/sitemap
+    ```
+  </Tab>
+  <Tab title="yarn">
+    ```bash
+    yarn add @astrojs/sitemap
+    ```
+  </Tab>
+</Tabs>
+
+**Step 2:** Import and add to your config file
+
+```js title="astro.config.mjs"
+import { defineConfig } from 'astro/config';
+import sitemap from '@astrojs/sitemap';
+
+export default defineConfig({
+  integrations: [sitemap()],
+});
+```
+
+## Configuration Options
+
+Integrations are almost always authored as factory functions that return the actual integration object. This lets you pass arguments and options:
+
+```js
+integrations: [
+  // Example: Customize your integration with function arguments
+  sitemap({ filter: true })
+]
+```
+
+## Upgrading Integrations
+
+### Automatic Upgrading
+
+Upgrade all official integrations at once:
+
+<Tabs>
+  <Tab title="npm">
+    ```bash
+    npx @astrojs/upgrade
+    ```
+  </Tab>
+  <Tab title="pnpm">
+    ```bash
+    pnpm dlx @astrojs/upgrade
+    ```
+  </Tab>
+  <Tab title="yarn">
+    ```bash
+    yarn dlx @astrojs/upgrade
+    ```
+  </Tab>
+</Tabs>
+
+### Manual Upgrading
+
+Upgrade one or more integrations manually:
+
+<Tabs>
+  <Tab title="npm">
+    ```bash
+    npm install @astrojs/react@latest @astrojs/partytown@latest
+    ```
+  </Tab>
+  <Tab title="pnpm">
+    ```bash
+    pnpm add @astrojs/react@latest @astrojs/partytown@latest
+    ```
+  </Tab>
+  <Tab title="yarn">
+    ```bash
+    yarn add @astrojs/react@latest @astrojs/partytown@latest
+    ```
+  </Tab>
+</Tabs>
+
+## Integration Categories
+
+<CardGroup cols={2}>
+  <Card title="UI Frameworks" icon="react" href="/integrations/ui-frameworks">
+    Add support for React, Vue, Svelte, and other UI frameworks
+  </Card>
+  <Card title="Adapters" icon="server" href="/integrations/adapters">
+    Deploy to Netlify, Vercel, and other platforms
+  </Card>
+  <Card title="Other Integrations" icon="puzzle-piece" href="/integrations/other">
+    MDX, Sitemap, Partytown, and more tools
+  </Card>
+</CardGroup>

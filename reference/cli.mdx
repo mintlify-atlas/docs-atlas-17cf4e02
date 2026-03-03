@@ -1,0 +1,495 @@
+---
+title: CLI Commands
+description: Complete reference for Astro CLI commands and flags
+---
+
+You can use the Command-Line Interface (CLI) provided by Astro to develop, build, and preview your project from a terminal window.
+
+## Using the CLI
+
+Use the CLI by running one of the commands documented on this page with your preferred package manager, optionally followed by any flags. Flags customize the behavior of a command.
+
+```bash npm
+npx astro dev
+```
+
+```bash pnpm
+pnpm astro dev
+```
+
+```bash yarn
+yarn astro dev
+```
+
+## Available Commands
+
+### `astro dev`
+
+Runs Astro's development server. This is a local HTTP server that doesn't bundle assets. It uses Hot Module Replacement (HMR) to update your browser as you save changes in your editor.
+
+**Keyboard shortcuts:**
+- `s + enter` - sync the content layer data (content and types)
+- `o + enter` - open your Astro site in the browser
+- `q + enter` - quit the development server
+
+**Example:**
+```bash
+astro dev
+```
+
+**Flags:**
+
+<ParamField path="--port" type="number" default="4321">
+  Specify which port to run on.
+  
+  ```bash
+  astro dev --port 8080
+  ```
+</ParamField>
+
+<ParamField path="--host" type="string | boolean">
+  Listen on all addresses, including LAN and public addresses. Pass a custom address to expose on a specific network IP.
+  
+  ```bash
+  # Listen on all addresses
+  astro dev --host
+  
+  # Expose on specific address
+  astro dev --host 192.168.0.1
+  ```
+</ParamField>
+
+<ParamField path="--open" type="string | boolean">
+  Automatically open the app in the browser on server start. Can be passed a full URL or pathname.
+  
+  ```bash
+  astro dev --open
+  astro dev --open /about
+  ```
+</ParamField>
+
+<ParamField path="--force" type="boolean">
+  Clear the content layer cache, forcing a full rebuild.
+  
+  ```bash
+  astro dev --force
+  ```
+</ParamField>
+
+### `astro build`
+
+Builds your site for deployment. By default, this will generate static files and place them in a `dist/` directory. If any routes are rendered on demand, this will generate the necessary server files to serve your site.
+
+**Example:**
+```bash
+astro build
+```
+
+**Flags:**
+
+<ParamField path="--devOutput" type="boolean">
+  Outputs a development-based build similar to code transformed in `astro dev`. This can be useful to test build-only issues with additional debugging information included.
+  
+  ```bash
+  astro build --devOutput
+  ```
+</ParamField>
+
+### `astro preview`
+
+Starts a local server to serve the contents of your static directory (`dist/` by default) created by running `astro build`.
+
+This command allows you to preview your site locally after building to catch any errors in your build output before deploying it. It is not designed to be run in production.
+
+**Keyboard shortcuts:**
+- `o + enter` - open your Astro site in the browser
+- `q + enter` - quit the preview server
+
+**Example:**
+```bash
+astro preview
+```
+
+### `astro check`
+
+Runs diagnostics (such as type-checking within `.astro` files) against your project and reports errors to the console. If any errors are found the process will exit with a code of **1**.
+
+This command is intended to be used in CI workflows.
+
+**Example:**
+```bash
+astro check
+```
+
+**Flags:**
+
+<ParamField path="--watch" type="boolean">
+  The command will watch for any changes in your project, and will report any errors.
+  
+  ```bash
+  astro check --watch
+  ```
+</ParamField>
+
+<ParamField path="--root" type="string">
+  Specifies a different root directory to check. Uses the current working directory by default.
+  
+  ```bash
+  astro check --root ./my-project
+  ```
+</ParamField>
+
+<ParamField path="--tsconfig" type="string">
+  Specifies a `tsconfig.json` file to use manually. If not provided, Astro will attempt to find a config, or infer the project's config automatically.
+  
+  ```bash
+  astro check --tsconfig ./tsconfig.custom.json
+  ```
+</ParamField>
+
+<ParamField path="--minimumFailingSeverity" type="'error' | 'warning' | 'hint'" default="'error'">
+  Specifies the minimum severity needed to exit with an error code.
+  
+  ```bash
+  astro check --minimumFailingSeverity warning
+  ```
+</ParamField>
+
+<ParamField path="--minimumSeverity" type="'error' | 'warning' | 'hint'" default="'hint'">
+  Specifies the minimum severity to output.
+  
+  ```bash
+  astro check --minimumSeverity warning
+  ```
+</ParamField>
+
+<ParamField path="--preserveWatchOutput" type="boolean">
+  Specifies not to clear the output between checks when in watch mode.
+  
+  ```bash
+  astro check --watch --preserveWatchOutput
+  ```
+</ParamField>
+
+<ParamField path="--noSync" type="boolean">
+  Specifies not to run `astro sync` before checking the project.
+  
+  ```bash
+  astro check --noSync
+  ```
+</ParamField>
+
+### `astro sync`
+
+Generates TypeScript types for all Astro modules. This sets up a `.astro/types.d.ts` file for type inferencing, and defines modules for features that rely on generated types:
+
+- The `astro:content` module for the Content Collections API
+- The `astro:db` module for Astro DB
+- The `astro:env` module for Astro Env
+- The `astro:actions` module for Astro Actions
+
+<Info>
+  Running `astro dev`, `astro build` or `astro check` will run the `sync` command as well.
+</Info>
+
+**Example:**
+```bash
+astro sync
+```
+
+### `astro add`
+
+Adds an integration to your configuration. This command will:
+1. Install the necessary dependencies
+2. Update your `astro.config.mjs` file
+3. Apply any necessary configuration changes
+
+**Example:**
+```bash
+# Add a single integration
+astro add react
+
+# Add multiple integrations
+astro add react tailwind
+```
+
+### `astro docs`
+
+Launches the Astro Docs website directly from the terminal.
+
+**Example:**
+```bash
+astro docs
+```
+
+### `astro info`
+
+Reports useful information about your current Astro environment. Useful for providing information when opening an issue.
+
+**Example:**
+```bash
+astro info
+```
+
+**Example output:**
+```
+Astro                    v5.14.1
+Vite                     v6.3.6
+Node                     v22.17.1
+System                   macOS (arm64)
+Package Manager          npm
+Output                   static
+Adapter                  none
+Integrations             @astrojs/starlight (v0.35.3)
+```
+
+**Flags:**
+
+<ParamField path="--copy" type="boolean">
+  The command will copy the output to the clipboard without prompting.
+  
+  ```bash
+  astro info --copy
+  ```
+</ParamField>
+
+### `astro preferences`
+
+Manage user preferences with the `astro preferences` command. User preferences are specific to individual Astro users, unlike the `astro.config.mjs` file which changes behavior for everyone working on a project.
+
+User preferences are scoped to the current project by default, stored in a local `.astro/settings.json` file. Using the `--global` flag, user preferences can also be applied to every Astro project on the current machine.
+
+**Available preferences:**
+- `devToolbar` - Enable or disable the development toolbar in the browser (Default: `true`)
+- `checkUpdates` - Enable or disable automatic update checks for the Astro CLI (Default: `true`)
+
+**Examples:**
+
+<CodeGroup>
+
+```bash List preferences
+astro preferences list
+```
+
+```bash Enable a preference
+astro preferences enable devToolbar
+```
+
+```bash Disable a preference
+astro preferences disable devToolbar
+```
+
+```bash Reset to default
+astro preferences reset devToolbar
+```
+
+```bash Global preferences
+astro preferences disable --global devToolbar
+```
+
+</CodeGroup>
+
+### `astro telemetry`
+
+Sets telemetry configuration for the current CLI user. Telemetry is anonymous data that provides the Astro team insights into which Astro features are most often used.
+
+**Examples:**
+
+<CodeGroup>
+
+```bash Disable telemetry
+astro telemetry disable
+```
+
+```bash Enable telemetry
+astro telemetry enable
+```
+
+```bash Reset telemetry
+astro telemetry reset
+```
+
+</CodeGroup>
+
+<Tip>
+  To disable telemetry in CI environments, add the `astro telemetry disable` command to your CI scripts or set the `ASTRO_TELEMETRY_DISABLED` environment variable.
+</Tip>
+
+### `astro create-key`
+
+Generates a key to encrypt props passed to server islands.
+
+**Example:**
+```bash
+astro create-key
+```
+
+Set this key as the `ASTRO_KEY` environment variable (e.g. in a `.env` file) and include it in your CI/CD or host's build settings when you need a constant encryption key for your server islands for situations like rolling deployments, multi-region hosting or a CDN that caches pages containing server islands.
+
+## Global Flags
+
+These flags can be used with any command.
+
+<ParamField path="--root" type="string">
+  Specifies the path to the project root. If not specified, the current working directory is assumed to be the root.
+  
+  ```bash
+  astro --root myRootFolder/myProjectFolder dev
+  ```
+</ParamField>
+
+<ParamField path="--config" type="string">
+  Specifies the path to the config file relative to the project root. Defaults to `astro.config.mjs`. Use this if you use a different name for your configuration file or have your config file in another folder.
+  
+  ```bash
+  astro --config config/astro.config.mjs dev
+  ```
+</ParamField>
+
+<ParamField path="--site" type="string">
+  Configures the `site` for your project. Passing this flag will override the `site` value in your `astro.config.mjs` file, if one exists.
+  
+  ```bash
+  astro build --site https://example.com
+  ```
+</ParamField>
+
+<ParamField path="--base" type="string">
+  Configures the `base` for your project. Passing this flag will override the `base` value in your `astro.config.mjs` file, if one exists.
+  
+  ```bash
+  astro build --base /docs
+  ```
+</ParamField>
+
+<ParamField path="--port" type="number" default="4321">
+  Specifies which port to run the dev server and preview server on.
+  
+  ```bash
+  astro dev --port 8080
+  ```
+</ParamField>
+
+<ParamField path="--host" type="string | boolean">
+  Sets which network IP addresses the dev server and preview server should listen on (i.e. non-localhost IPs).
+  
+  - `--host` - listen on all addresses, including LAN and public addresses
+  - `--host <custom-address>` - expose on a network IP address at `<custom-address>`
+  
+  ```bash
+  astro dev --host
+  astro dev --host 192.168.0.1
+  ```
+  
+  <Warning>
+    Do not use the `--host` flag to expose the dev server and preview server in a production environment. The servers are designed for local use while developing your site only.
+  </Warning>
+</ParamField>
+
+<ParamField path="--allowed-hosts" type="string">
+  Specifies the hostnames that Astro is allowed to respond to in `dev` or `preview` modes. Can be passed a comma-separated list of hostnames or `true` to allow any hostname.
+  
+  ```bash
+  astro dev --allowed-hosts staging.example.com,qa.example.com
+  ```
+</ParamField>
+
+<ParamField path="--open" type="string | boolean">
+  Automatically opens the app in the browser on server start. Can be passed a full URL string or a pathname.
+  
+  ```bash
+  astro dev --open
+  astro dev --open http://example.com
+  astro dev --open /about
+  ```
+</ParamField>
+
+<ParamField path="--outDir" type="string">
+  Configures the `outDir` for your project. Passing this flag will override the `outDir` value in your `astro.config.mjs` file, if one exists.
+  
+  ```bash
+  astro build --outDir ./custom-build
+  ```
+</ParamField>
+
+<ParamField path="--force" type="string">
+  Clear the content layer cache, forcing a full rebuild.
+  
+  ```bash
+  astro build --force
+  ```
+</ParamField>
+
+<ParamField path="--mode" type="string">
+  Configures the `mode` inline config for your project.
+  
+  ```bash
+  astro build --mode production
+  ```
+</ParamField>
+
+<ParamField path="--verbose" type="boolean">
+  Enables verbose logging, which is helpful when debugging an issue.
+  
+  ```bash
+  astro build --verbose
+  ```
+</ParamField>
+
+<ParamField path="--silent" type="boolean">
+  Enables silent logging, which will run the server without any console output.
+  
+  ```bash
+  astro dev --silent
+  ```
+</ParamField>
+
+<ParamField path="--version" type="boolean">
+  Prints the Astro version number and exits.
+  
+  ```bash
+  astro --version
+  ```
+</ParamField>
+
+<ParamField path="--help" type="boolean">
+  Prints the help message and exits.
+  
+  ```bash
+  astro --help
+  astro dev --help
+  ```
+</ParamField>
+
+## package.json Scripts
+
+You can also use scripts in `package.json` for shorter versions of these commands. Using a script allows you to use the same commands that you may be familiar with from other projects.
+
+The following scripts for the most common `astro` commands are added for you automatically when you create a project using the `create astro` wizard:
+
+```json package.json
+{
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview"
+  }
+}
+```
+
+When using npm, you need to add `--` before flags:
+
+```bash npm
+npm run dev -- --port 8080
+npm run build -- --verbose
+```
+
+```bash pnpm
+pnpm dev --port 8080
+pnpm build --verbose
+```
+
+```bash yarn
+yarn dev --port 8080
+yarn build --verbose
+```

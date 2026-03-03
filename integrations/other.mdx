@@ -1,0 +1,316 @@
+---
+title: Other Integrations
+description: Enhance your Astro site with MDX, Sitemap, Partytown, and other useful integrations.
+---
+
+Beyond UI frameworks and deployment adapters, Astro offers many other integrations to enhance your site with additional features and tools.
+
+## Popular Integrations
+
+<CardGroup cols={2}>
+  <Card title="MDX" icon="markdown">
+    Use JSX components and expressions in Markdown files
+  </Card>
+  <Card title="Sitemap" icon="sitemap">
+    Automatically generate XML sitemaps for SEO
+  </Card>
+  <Card title="Partytown" icon="party-horn">
+    Run third-party scripts in a web worker
+  </Card>
+  <Card title="Tailwind CSS" icon="tailwind">
+    Utility-first CSS framework integration
+  </Card>
+</CardGroup>
+
+## MDX Integration
+
+The `@astrojs/mdx` integration enables the usage of MDX components and allows you to create pages as `.mdx` files.
+
+### What is MDX?
+
+MDX allows you to use variables, JSX expressions, and components within Markdown content. You can write standard Markdown and seamlessly include interactive components.
+
+### Installation
+
+<Tabs>
+  <Tab title="Automatic">
+    ```bash
+    npx astro add mdx
+    ```
+  </Tab>
+  <Tab title="Manual">
+    Install the package:
+    ```bash
+    npm install @astrojs/mdx
+    ```
+    
+    Add to your config:
+    ```js title="astro.config.mjs"
+    import { defineConfig } from 'astro/config';
+    import mdx from '@astrojs/mdx';
+    
+    export default defineConfig({
+      integrations: [mdx()],
+    });
+    ```
+  </Tab>
+</Tabs>
+
+### Usage Example
+
+Create an `.mdx` file with frontmatter and components:
+
+```mdx title="src/pages/post.mdx"
+---
+title: My First MDX Post
+author: Houston
+---
+import Button from '../components/Button.astro';
+
+# {frontmatter.title}
+
+Written by: {frontmatter.author}
+
+This is a regular paragraph in Markdown.
+
+<Button>Click me!</Button>
+```
+
+### Using Components in MDX
+
+Import and use both Astro and framework components:
+
+```mdx title="src/content/blog/post-1.mdx"
+---
+title: My first post
+---
+import ReactCounter from '../components/ReactCounter.jsx';
+
+I just started my new Astro blog!
+
+Here is my counter component, working in MDX:
+
+<ReactCounter client:load />
+```
+
+### Custom Component Mapping
+
+Map Markdown syntax to custom components:
+
+```astro title="src/components/Blockquote.astro"
+---
+const props = Astro.props;
+---
+<blockquote {...props} class="bg-blue-50 p-4">
+  <span class="text-4xl text-blue-600 mb-2">"</span>
+  <slot />
+</blockquote>
+```
+
+```mdx title="src/pages/post.mdx"
+import Blockquote from '../components/Blockquote.astro';
+export const components = { blockquote: Blockquote }
+
+> This quote will use the custom Blockquote component
+```
+
+### Configuration
+
+Configure MDX with remark and rehype plugins:
+
+```js title="astro.config.mjs"
+import { defineConfig } from 'astro/config';
+import mdx from '@astrojs/mdx';
+import remarkToc from 'remark-toc';
+import rehypePresetMinify from 'rehype-preset-minify';
+
+export default defineConfig({
+  integrations: [
+    mdx({
+      syntaxHighlight: 'shiki',
+      shikiConfig: { theme: 'dracula' },
+      remarkPlugins: [remarkToc],
+      rehypePlugins: [rehypePresetMinify],
+    }),
+  ],
+});
+```
+
+## Sitemap Integration
+
+The `@astrojs/sitemap` integration automatically generates an XML sitemap for your site to help search engines discover your pages.
+
+### Installation
+
+<Tabs>
+  <Tab title="Automatic">
+    ```bash
+    npx astro add sitemap
+    ```
+  </Tab>
+  <Tab title="Manual">
+    Install the package:
+    ```bash
+    npm install @astrojs/sitemap
+    ```
+    
+    Add to your config:
+    ```js title="astro.config.mjs"
+    import { defineConfig } from 'astro/config';
+    import sitemap from '@astrojs/sitemap';
+    
+    export default defineConfig({
+      site: 'https://example.com',
+      integrations: [sitemap()],
+    });
+    ```
+  </Tab>
+</Tabs>
+
+<Note>
+The `site` option is required for sitemap generation.
+</Note>
+
+### Configuration
+
+Customize your sitemap generation:
+
+```js title="astro.config.mjs"
+import { defineConfig } from 'astro/config';
+import sitemap from '@astrojs/sitemap';
+
+export default defineConfig({
+  site: 'https://example.com',
+  integrations: [
+    sitemap({
+      filter: (page) => !page.includes('/draft/'),
+      changefreq: 'weekly',
+      priority: 0.7,
+      lastmod: new Date(),
+    }),
+  ],
+});
+```
+
+## Partytown Integration
+
+The `@astrojs/partytown` integration moves third-party scripts into a web worker, keeping your main thread free for a better user experience.
+
+### Installation
+
+<Tabs>
+  <Tab title="Automatic">
+    ```bash
+    npx astro add partytown
+    ```
+  </Tab>
+  <Tab title="Manual">
+    Install the package:
+    ```bash
+    npm install @astrojs/partytown
+    ```
+    
+    Add to your config:
+    ```js title="astro.config.mjs"
+    import { defineConfig } from 'astro/config';
+    import partytown from '@astrojs/partytown';
+    
+    export default defineConfig({
+      integrations: [
+        partytown({
+          config: {
+            forward: ['dataLayer.push'],
+          },
+        }),
+      ],
+    });
+    ```
+  </Tab>
+</Tabs>
+
+### Usage
+
+Add the `type="text/partytown"` attribute to your scripts:
+
+```astro title="src/pages/index.astro"
+<script type="text/partytown" src="https://example.com/analytics.js"></script>
+```
+
+## Tailwind CSS Integration
+
+The `@astrojs/tailwind` integration brings Tailwind CSS's utility-first CSS framework to your project.
+
+### Installation
+
+<Tabs>
+  <Tab title="Automatic">
+    ```bash
+    npx astro add tailwind
+    ```
+  </Tab>
+  <Tab title="Manual">
+    Install the package:
+    ```bash
+    npm install @astrojs/tailwind tailwindcss
+    ```
+    
+    Add to your config:
+    ```js title="astro.config.mjs"
+    import { defineConfig } from 'astro/config';
+    import tailwind from '@astrojs/tailwind';
+    
+    export default defineConfig({
+      integrations: [tailwind()],
+    });
+    ```
+  </Tab>
+</Tabs>
+
+### Configuration
+
+Customize Tailwind with a config file:
+
+```js title="tailwind.config.mjs"
+export default {
+  content: ['./src/**/*.{astro,html,js,jsx,md,mdx,svelte,ts,tsx,vue}'],
+  theme: {
+    extend: {
+      colors: {
+        primary: '#3b82f6',
+      },
+    },
+  },
+  plugins: [],
+}
+```
+
+### Usage
+
+Use Tailwind utility classes in your components:
+
+```astro title="src/components/Button.astro"
+<button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+  Click me
+</button>
+```
+
+## Database Integrations
+
+Connect to databases with official integrations:
+
+- `@astrojs/db` - Astro's built-in SQL database
+- Community integrations for PostgreSQL, MongoDB, and more
+
+## Image Optimization
+
+- `@astrojs/image` - Optimize and transform images
+- Works with local and remote images
+- Automatic format conversion and resizing
+
+## Finding More Integrations
+
+Browse the complete set of hundreds of official and community integrations:
+
+- [Astro Integrations Directory](https://astro.build/integrations/)
+- Filter by category: authentication, analytics, performance, SEO, accessibility, and more
+- Community-built integrations for popular services and tools

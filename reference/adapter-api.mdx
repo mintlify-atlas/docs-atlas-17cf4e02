@@ -1,0 +1,396 @@
+---
+title: Adapter API
+description: Complete reference for creating deployment adapters that enable server-side rendering in Astro.
+---
+
+The Adapter API enables server-side rendering (SSR) for Astro by providing host-specific request handling and build configuration. Use this API to deploy Astro to any cloud provider or edge platform.
+
+## When to use this API
+
+Use the Adapter API when you need to:
+
+- Enable SSR deployment to a specific hosting platform
+- Configure build output for serverless functions
+- Handle platform-specific request/response formats
+- Set up preview servers for testing SSR builds
+- Implement host-specific features (edge middleware, image optimization, etc.)
+
+## Creating an adapter
+
+An adapter is a special integration that calls `setAdapter()` in the `astro:config:done` hook:
+
+```js
+export default function createAdapter() {
+  return {
+    name: '@example/my-adapter',
+    hooks: {
+      'astro:config:done': ({ setAdapter }) => {
+        setAdapter({
+          name: '@example/my-adapter',
+          serverEntrypoint: '@example/my-adapter/server.js',
+          supportedAstroFeatures: {
+            staticOutput: 'stable'
+          }
+        });
+      },
+    },
+  };
+}
+```
+
+## Adapter configuration
+
+The `setAdapter()` function accepts an object with the following properties:
+
+<ParamField path="name" type="string" required>
+  Unique name for your adapter, used for logging.
+</ParamField>
+
+<ParamField path="serverEntrypoint" type="string | URL" required>
+  Path to the server entrypoint file that handles rendering.
+
+  ```js
+  serverEntrypoint: '@example/my-adapter/server.js'
+  ```
+</ParamField>
+
+<ParamField path="supportedAstroFeatures" type="AstroAdapterFeatureMap">
+  Map of Astro features supported by the adapter. This allows Astro to provide appropriate error messages.
+
+  Available features:
+  - `staticOutput` - Serve static pages
+  - `hybridOutput` - Mix of static and SSR pages
+  - `serverOutput` - All pages rendered on-demand
+  - `i18nDomains` - i18n domain support
+  - `envGetSecret` - `astro:env/server` secret support
+  - `sharpImageService` - Sharp image service support
+
+  Each feature accepts a support level:
+  - `'stable'` - Fully supported
+  - `'experimental'` - Supported but may change
+  - `'limited'` - Partial support
+  - `'deprecated'` - Supported but will be removed
+  - `'unsupported'` - Not supported
+
+  ```js
+  supportedAstroFeatures: {
+    staticOutput: 'stable',
+    hybridOutput: 'experimental',
+    serverOutput: 'stable',
+    i18nDomains: 'unsupported'
+  }
+  ```
+</ParamField>
+
+<ParamField path="adapterFeatures" type="AstroAdapterFeatures">
+  Adapter-specific features that change build output:
+
+  ```ts
+  {
+    edgeMiddleware?: boolean;
+    buildOutput?: 'static' | 'server';
+    experimentalStaticHeaders?: boolean;
+  }
+  ```
+</ParamField>
+
+<ParamField path="args" type="any">
+  JSON-serializable value passed to the server entrypoint at runtime. Useful for build-time configuration.
+
+  ```js
+  args: {
+    assets: config.build.assets,
+    serverPath: '/api'
+  }
+  ```
+</ParamField>
+
+<ParamField path="exports" type="string[]">
+  Array of named exports from your server entrypoint's `createExports()` function.
+
+  ```js
+  exports: ['handler', 'middleware']
+  ```
+</ParamField>
+
+<ParamField path="previewEntrypoint" type="string | URL">
+  Path to a module that starts the preview server when running `astro preview`.
+
+  ```js
+  previewEntrypoint: '@example/my-adapter/preview.js'
+  ```
+</ParamField>
+
+## Building a server entrypoint
+
+The server entrypoint handles rendering at request time. It must export either `createExports()` or `start()`.
+
+### createExports()
+
+Export a function that returns the exports required by your host:
+
+```js
+import { App } from 'astro/app';
+
+export function createExports(manifest, args) {
+  const app = new App(manifest);
+  
+  const handler = async (request, context) => {
+    return await app.render(request);
+  };
+  
+  return { handler };
+}
+```
+
+<ParamField path="manifest" type="SSRManifest" required>
+  The SSR manifest containing routing and build information.
+</ParamField>
+
+<ParamField path="args" type="any">
+  The `args` object defined in your adapter configuration.
+</ParamField>
+
+### start()
+
+For hosts that require you to start the server (e.g., listening to a port):
+
+```js
+import { App } from 'astro/app';
+
+export function start(manifest, args) {
+  const app = new App(manifest);
+  
+  addEventListener('fetch', event => {
+    event.respondWith(app.render(event.request));
+  });
+}
+```
+
+## The App class
+
+Imported from `astro/app`, the `App` class provides methods for rendering:
+
+```js
+import { App } from 'astro/app';
+
+const app = new App(manifest);
+```
+
+### app.render()
+
+Renders a page and returns a `Response`:
+
+```ts
+app.render(
+  request: Request,
+  options?: RenderOptions
+): Promise<Response>
+```
+
+<ParamField path="request" type="Request" required>
+  Standard `Request` object to render.
+</ParamField>
+
+<ParamField path="options" type="RenderOptions">
+  Optional rendering configuration:
+
+  ```ts
+  {
+    addCookieHeader?: boolean;
+    clientAddress?: string;
+    locals?: object;
+    routeData?: RouteData;
+  }
+  ```
+</ParamField>
+
+**Example:**
+
+```js
+const response = await app.render(request, {
+  clientAddress: request.headers.get('x-forwarded-for'),
+  locals: { user: authenticatedUser }
+});
+```
+
+### app.match()
+
+Determines if a request matches Astro's routing rules:
+
+```ts
+app.match(
+  request: Request,
+  allowPrerenderedRoutes?: boolean
+): RouteData | undefined
+```
+
+```js
+if (app.match(request)) {
+  return await app.render(request);
+} else {
+  return new Response('Not Found', { status: 404 });
+}
+```
+
+### Static methods
+
+<ParamField path="App.getSetCookieFromResponse" type="(response: Response) => Generator<string>">
+  Returns individual cookie header values from a response.
+
+  ```js
+  for (const cookie of App.getSetCookieFromResponse(response)) {
+    response.headers.append('Set-Cookie', cookie);
+  }
+  ```
+</ParamField>
+
+<ParamField path="App.validateForwardedHost" type="(forwardedHost: string, allowedDomains?: RemotePattern[], protocol?: string) => boolean">
+  Validates a forwarded host against allowed domains.
+
+  ```js
+  const forwardedHost = request.headers.get('X-Forwarded-Host');
+  if (App.validateForwardedHost(forwardedHost, manifest.allowedDomains)) {
+    // Process request
+  }
+  ```
+</ParamField>
+
+## Node.js adapter features
+
+For Node.js environments, use `astro/app/node`:
+
+```js
+import { NodeApp } from 'astro/app/node';
+
+const nodeApp = new NodeApp(manifest);
+```
+
+### NodeApp.createRequest()
+
+Converts Node's `IncomingMessage` to a standard `Request`:
+
+```js
+import { createServer } from 'node:http';
+import { NodeApp } from 'astro/app/node';
+
+const server = createServer(async (req, res) => {
+  const request = NodeApp.createRequest(req);
+  const response = await app.render(request);
+  await NodeApp.writeResponse(response, res);
+});
+```
+
+### NodeApp.writeResponse()
+
+Streams a `Response` to Node's `ServerResponse`:
+
+```js
+const response = await app.render(request);
+await NodeApp.writeResponse(response, res);
+```
+
+## Feature support configuration
+
+Define support levels for Astro features:
+
+```js
+supportedAstroFeatures: {
+  staticOutput: 'stable',
+  hybridOutput: 'stable',
+  serverOutput: 'stable',
+  i18nDomains: {
+    support: 'limited',
+    message: 'Domain routing requires manual DNS configuration'
+  },
+  envGetSecret: 'stable',
+  sharpImageService: 'experimental'
+}
+```
+
+Provide custom messages for non-stable support:
+
+```js
+sharpImageService: {
+  support: 'experimental',
+  message: 'Sharp support is experimental. Some features may not work.'
+}
+```
+
+## Adapter features
+
+### edgeMiddleware
+
+Prevents middleware from being bundled with every page:
+
+```js
+adapterFeatures: {
+  edgeMiddleware: true
+}
+```
+
+Access the middleware entry point in `astro:build:ssr`:
+
+```js
+'astro:build:ssr': ({ middlewareEntryPoint }) => {
+  if (middlewareEntryPoint) {
+    // Bundle middleware separately
+  }
+}
+```
+
+### buildOutput
+
+Force a specific build output type:
+
+```js
+adapterFeatures: {
+  buildOutput: 'static' // or 'server'
+}
+```
+
+## Example adapter
+
+```js
+// my-adapter.mjs
+export default function createAdapter() {
+  return {
+    name: '@example/my-adapter',
+    hooks: {
+      'astro:config:done': ({ config, setAdapter }) => {
+        setAdapter({
+          name: '@example/my-adapter',
+          serverEntrypoint: '@example/my-adapter/server.js',
+          supportedAstroFeatures: {
+            staticOutput: 'stable',
+            serverOutput: 'stable',
+            hybridOutput: 'stable'
+          },
+          args: {
+            deploymentId: process.env.DEPLOYMENT_ID
+          },
+          exports: ['handler']
+        });
+      },
+      'astro:build:done': ({ logger }) => {
+        logger.info('Build complete! Deploy to your platform.');
+      }
+    }
+  };
+}
+
+// server.js
+import { App } from 'astro/app';
+
+export function createExports(manifest, args) {
+  const app = new App(manifest);
+  
+  const handler = async (request) => {
+    const clientAddress = request.headers.get('x-forwarded-for');
+    const response = await app.render(request, { clientAddress });
+    return response;
+  };
+  
+  return { handler };
+}
+```

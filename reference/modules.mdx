@@ -1,0 +1,485 @@
+---
+title: Built-in Modules Reference
+description: Complete reference for Astro's built-in modules including astro:assets and astro:content
+---
+
+Astro provides several built-in modules that you can import into your project. This page documents the most commonly used modules.
+
+## astro:assets
+
+The `astro:assets` module provides built-in components and helper functions for optimizing and displaying images.
+
+### Imports
+
+```js
+import { 
+  Image,
+  Picture,
+  getImage,
+  inferRemoteSize,
+  getConfiguredImageService,
+  imageConfig,
+} from 'astro:assets';
+```
+
+### `<Image />`
+
+The `<Image />` component optimizes and transforms images.
+
+```astro title="src/components/MyComponent.astro"
+---
+import { Image } from 'astro:assets';
+import myImage from "../assets/my_image.png";
+---
+
+<Image src={myImage} alt="A description of my image." />
+```
+
+#### Props
+
+<ParamField path="src" type="ImageMetadata | string | Promise<{ default: ImageMetadata }>" required>
+  The image file. For local images in `src/`, import the image. For images in `public/`, use the file path. For remote images, use the full URL.
+</ParamField>
+
+<ParamField path="alt" type="string" required>
+  Descriptive alt text for the image.
+</ParamField>
+
+<ParamField path="width" type="number">
+  The desired width of the image. Required for images in `public/`.
+</ParamField>
+
+<ParamField path="height" type="number">
+  The desired height of the image. Required for images in `public/`.
+</ParamField>
+
+<ParamField path="format" type="'avif' | 'jpeg' | 'jpg' | 'png' | 'svg' | 'webp'">
+  The output image format. Defaults to `.webp`.
+</ParamField>
+
+<ParamField path="quality" type="'low' | 'mid' | 'high' | 'max' | number">
+  The image quality. Can be a preset or a number from 0-100.
+</ParamField>
+
+<ParamField path="densities" type="Array<number | `${number}x`>">
+  A list of pixel densities to generate for the image. Used to generate a `srcset` attribute.
+</ParamField>
+
+<ParamField path="widths" type="number[]">
+  A list of widths to generate for the image. Used to generate a `srcset` attribute. Must be used with `sizes`.
+</ParamField>
+
+<ParamField path="sizes" type="string">
+  Specifies the layout width of the image for each of a list of media conditions. Must be provided when specifying `widths`.
+</ParamField>
+
+<ParamField path="inferSize" type="boolean" default="false">
+  Automatically infer width and height for remote images.
+</ParamField>
+
+<ParamField path="priority" type="boolean" default="false">
+  Automatically sets `loading`, `decoding`, and `fetchpriority` attributes to optimal values for above-the-fold images.
+</ParamField>
+
+<ParamField path="background" type="string">
+  Background color to use when flattening images with transparency. Especially useful when converting to formats that don't support transparency like JPEG.
+</ParamField>
+
+#### Example: Local image
+
+```astro
+---
+import { Image } from 'astro:assets';
+import myImage from '../assets/my_image.png';
+---
+<Image src={myImage} alt="A description of my image." />
+```
+
+#### Example: Remote image
+
+```astro
+---
+import { Image } from 'astro:assets';
+---
+<Image
+  src="https://example.com/remote-image.jpg"
+  alt="A description of my image."
+  width="200"
+  height="150"
+/>
+```
+
+#### Example: Image with densities
+
+```astro
+---
+import { Image } from 'astro:assets';
+import myImage from '../assets/my_image.png';
+---
+<Image
+  src={myImage}
+  width={myImage.width / 2}
+  densities={[1.5, 2]}
+  alt="A description of my image."
+/>
+```
+
+### `<Picture />`
+
+The `<Picture />` component generates an optimized image with multiple formats and/or sizes.
+
+```astro
+---
+import { Picture } from 'astro:assets';
+import myImage from "../assets/my_image.png";
+---
+
+<Picture src={myImage} formats={['avif', 'webp']} alt="A description of my image." />
+```
+
+#### Props
+
+`<Picture />` accepts all the properties of `<Image />`, plus:
+
+<ParamField path="formats" type="Array<'avif' | 'jpeg' | 'jpg' | 'png' | 'svg' | 'webp'>" default="['webp']">
+  An array of image formats to use for the `<source>` tags. Entries will be added in the order listed.
+</ParamField>
+
+<ParamField path="fallbackFormat" type="'avif' | 'gif' | 'jpeg' | 'jpg' | 'png' | 'svg' | 'webp'">
+  Format to use as a fallback value for the `<img>` tag. Defaults to `.png` for static images, `.gif` for animated images, and `.svg` for SVG files.
+</ParamField>
+
+<ParamField path="pictureAttributes" type="HTMLAttributes<'picture'>">
+  An object of attributes to be added to the `<picture>` tag.
+</ParamField>
+
+### Responsive Image Properties
+
+Setting the `layout` property creates a responsive image.
+
+<ParamField path="layout" type="'constrained' | 'full-width' | 'fixed' | 'none'" default="'none'">
+  Defines how the image should resize when its container changes size.
+</ParamField>
+
+- `constrained` - The image will scale down to fit the container but won't scale up beyond its original dimensions
+- `full-width` - The image will scale to fit the width of the container
+- `fixed` - The image will maintain the requested dimensions and not resize
+- `none` - The image will not be responsive
+
+<ParamField path="fit" type="'contain' | 'cover' | 'fill' | 'none' | 'scale-down'" default="'cover'">
+  Defines how a responsive image should be cropped if its aspect ratio is changed. Values match CSS `object-fit`.
+</ParamField>
+
+<ParamField path="position" type="string" default="'center'">
+  Defines the position of the image crop for a responsive image. Values match CSS `object-position`.
+</ParamField>
+
+#### Example: Responsive image
+
+```astro
+---
+import { Image } from 'astro:assets';
+import myImage from '../assets/my_image.png';
+---
+<Image 
+  src={myImage} 
+  alt="A description of my image." 
+  layout='constrained' 
+  width={800} 
+  height={600} 
+/>
+```
+
+### getImage()
+
+<ParamField path="getImage()" type="(options: UnresolvedImageTransform) => Promise<GetImageResult>">
+  Generates images destined to be used somewhere other than directly in HTML.
+</ParamField>
+
+<ParamField path="options" type="object" required>
+  Image transformation options (same as `<Image />` props except `alt`).
+</ParamField>
+
+<ResponseField name="GetImageResult" type="object">
+  The result of the image transformation.
+  
+  <ParamField path="src" type="string">
+    The path to the generated image.
+  </ParamField>
+  
+  <ParamField path="attributes" type="Record<string, any>">
+    Additional HTML attributes needed to render the image (width, height, style, etc.).
+  </ParamField>
+  
+  <ParamField path="options" type="ImageTransform">
+    The transformation settings after validation.
+  </ParamField>
+</ResponseField>
+
+```astro title="src/components/Background.astro"
+---
+import { getImage } from "astro:assets";
+import myBackground from "../background.png"
+
+const optimizedBackground = await getImage({src: myBackground, format: 'avif'})
+---
+
+<div style={`background-image: url(${optimizedBackground.src});`}><slot /></div>
+```
+
+### inferRemoteSize()
+
+<ParamField path="inferRemoteSize()" type="(url: string) => Promise<Omit<ImageMetadata, 'src' | 'fsPath'>>">
+  Automatically infers the width and height of a remote image.
+</ParamField>
+
+<ParamField path="url" type="string" required>
+  The URL of the remote image.
+</ParamField>
+
+<ResponseField name="ImageMetadata" type="object">
+  <ParamField path="width" type="number">
+    The width of the image.
+  </ParamField>
+  
+  <ParamField path="height" type="number">
+    The height of the image.
+  </ParamField>
+  
+  <ParamField path="format" type="string">
+    The format of the image.
+  </ParamField>
+</ResponseField>
+
+```ts
+import { inferRemoteSize } from 'astro:assets';
+const { width, height } = await inferRemoteSize("https://example.com/cat.png");
+```
+
+### getConfiguredImageService()
+
+<ParamField path="getConfiguredImageService()" type="() => Promise<ImageService>">
+  Retrieves the resolved image service.
+</ParamField>
+
+### imageConfig
+
+<ParamField path="imageConfig" type="AstroConfig['image']">
+  The configuration options for images set by the user and merged with all defaults.
+</ParamField>
+
+## astro:content
+
+The `astro:content` module provides APIs to configure and query your Markdown or MDX documents.
+
+### Imports
+
+```js
+import { 
+  defineCollection,
+  getCollection,
+  getEntry,
+  getEntries,
+  reference,
+  render
+ } from 'astro:content';
+```
+
+### defineCollection()
+
+<ParamField path="defineCollection()" type="(input: CollectionConfig) => CollectionConfig">
+  A utility to configure a collection in a `src/content.config.*` file.
+</ParamField>
+
+<ParamField path="loader" type="Loader | () => Promise<Array | Record>" required>
+  Allows you to load data from any source, local or remote, into content collections.
+</ParamField>
+
+<ParamField path="schema" type="ZodType | (context: SchemaContext) => ZodType">
+  An optional Zod object to configure the type and shape of document frontmatter.
+</ParamField>
+
+```ts title="src/content.config.ts"
+import { z, defineCollection } from 'astro:content';
+import { glob } from 'astro/loaders';
+
+const blog = defineCollection({
+  loader: glob({ pattern: '**/*.md', base: './src/data/blog' }),
+  schema: z.object({
+    title: z.string(),
+    permalink: z.string().optional(),
+  }),
+});
+
+export const collections = { blog };
+```
+
+### reference()
+
+<ParamField path="reference()" type="(collection: string) => ZodEffects<ZodString, { collection, id: string }>">
+  Defines a relationship from one collection to another.
+</ParamField>
+
+<ParamField path="collection" type="string" required>
+  The name of the collection being referenced.
+</ParamField>
+
+```ts
+import { defineCollection, reference, z } from 'astro:content';
+import { glob } from 'astro/loaders';
+
+const blog = defineCollection({
+  loader: glob({ pattern: '**/*.md', base: './src/data/blog' }),
+  schema: z.object({
+    author: reference('authors'),
+    relatedPosts: z.array(reference('blog')),
+  })
+});
+
+const authors = defineCollection({
+  loader: file("src/data/authors.json"),
+  schema: z.object({ /* ... */ })
+});
+
+export const collections = { blog, authors };
+```
+
+### getCollection()
+
+<ParamField path="getCollection()" type="(collection: string, filter?: (entry: CollectionEntry) => boolean) => Promise<CollectionEntry[]>">
+  Retrieves a list of content collection entries by collection name.
+</ParamField>
+
+<ParamField path="collection" type="string" required>
+  The name of the collection to query.
+</ParamField>
+
+<ParamField path="filter" type="(entry: CollectionEntry) => boolean">
+  An optional function to filter entries by their properties.
+</ParamField>
+
+<ResponseField name="CollectionEntry[]" type="Array">
+  An array of collection entries.
+  
+  <ParamField path="id" type="string">
+    A unique ID for the entry.
+  </ParamField>
+  
+  <ParamField path="collection" type="string">
+    The name of the collection.
+  </ParamField>
+  
+  <ParamField path="data" type="object">
+    Frontmatter properties inferred from the collection schema.
+  </ParamField>
+  
+  <ParamField path="body" type="string | undefined">
+    The raw, uncompiled body of the document.
+  </ParamField>
+</ResponseField>
+
+```astro
+---
+import { getCollection } from 'astro:content';
+
+// Get all blog posts
+const allBlogPosts = await getCollection('blog');
+
+// Only return posts with `draft: true`
+const draftBlogPosts = await getCollection('blog', ({ data }) => {
+  return data.draft === true;
+});
+---
+```
+
+### getEntry()
+
+<ParamField path="getEntry()" type="(collection: string, id: string) => Promise<CollectionEntry | undefined>">
+  Retrieves a single collection entry by collection name and entry ID.
+</ParamField>
+
+<ParamField path="collection" type="string" required>
+  The name of the collection.
+</ParamField>
+
+<ParamField path="id" type="string" required>
+  The ID of the entry.
+</ParamField>
+
+<ResponseField name="CollectionEntry | undefined" type="object | undefined">
+  The collection entry, or `undefined` if not found.
+</ResponseField>
+
+```astro
+---
+import { getEntry } from 'astro:content';
+
+const enterprisePost = await getEntry('blog', 'enterprise');
+const picardProfile = await getEntry('captains', 'picard');
+
+// Get referenced entry
+const enterpriseCaptainProfile = await getEntry(enterprisePost.data.captain);
+---
+```
+
+### getEntries()
+
+<ParamField path="getEntries()" type="(entries: Array<{ collection: string, id: string }>) => Promise<CollectionEntry[]>">
+  Retrieves multiple collection entries from the same collection.
+</ParamField>
+
+<ParamField path="entries" type="Array<{ collection: string, id: string }>" required>
+  An array of entry references to retrieve.
+</ParamField>
+
+<ResponseField name="CollectionEntry[]" type="Array">
+  An array of collection entries.
+</ResponseField>
+
+```astro
+---
+import { getEntries, getEntry } from 'astro:content';
+
+const enterprisePost = await getEntry('blog', 'enterprise');
+const enterpriseRelatedPosts = await getEntries(enterprisePost.data.relatedPosts);
+---
+```
+
+### render()
+
+<ParamField path="render()" type="(entry: CollectionEntry) => Promise<RenderedEntry>">
+  Compiles a given entry for rendering.
+</ParamField>
+
+<ParamField path="entry" type="CollectionEntry" required>
+  The collection entry to render.
+</ParamField>
+
+<ResponseField name="RenderedEntry" type="object">
+  <ParamField path="Content" type="Component">
+    A component used to render the document's contents in an Astro file.
+  </ParamField>
+  
+  <ParamField path="headings" type="Array<{ depth: number; slug: string; text: string }>">
+    A generated list of headings.
+  </ParamField>
+  
+  <ParamField path="remarkPluginFrontmatter" type="any">
+    The modified frontmatter object after any remark or rehype plugins have been applied.
+  </ParamField>
+</ResponseField>
+
+```astro
+---
+import { getEntry, render } from 'astro:content';
+const entry = await getEntry('blog', 'entry-1');
+
+if (!entry) {
+  throw new Error('Could not find blog post 1');
+}
+
+const { Content, headings, remarkPluginFrontmatter } = await render(entry);
+---
+
+<Content />
+```

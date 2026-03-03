@@ -1,0 +1,379 @@
+---
+title: Server-side Rendering
+description: Learn how to use server-side rendering (SSR) and on-demand rendering in Astro.
+---
+
+Astro pages are pre-rendered as static HTML by default. You can opt into server-side rendering (SSR) to generate pages on demand when a route is requested.
+
+## What is SSR?
+
+**Server-side rendering (SSR)**, also called **on-demand rendering**, generates HTML pages on the server when they're requested rather than at build time. This allows you to:
+
+- Display personalized content
+- Access request data (cookies, headers)
+- Respond to form submissions
+- Serve fresh data without rebuilding
+
+## Enabling SSR
+
+SSR requires an **adapter** for your deployment platform.
+
+### Installing an Adapter
+
+Use the Astro CLI to install official adapters:
+
+<CodeGroup>
+  ```bash npm
+  npx astro add netlify
+  ```
+  
+  ```bash pnpm
+  pnpm astro add netlify
+  ```
+  
+  ```bash yarn
+  yarn astro add netlify
+  ```
+</CodeGroup>
+
+Available adapters:
+
+- Node.js
+- Netlify
+- Vercel
+- Cloudflare
+- And more community adapters
+
+### Manual Installation
+
+You can also install adapters manually:
+
+```bash
+npm install @astrojs/netlify
+```
+
+Then add it to your config:
+
+```js
+import { defineConfig } from 'astro/config';
+import netlify from '@astrojs/netlify';
+
+export default defineConfig({
+  adapter: netlify(),
+});
+```
+
+## Opting into SSR
+
+### Per-Page SSR
+
+By default, pages are static. Opt into SSR for specific pages:
+
+```astro
+---
+export const prerender = false;
+---
+<html>
+  <body>
+    <h1>This page is server-rendered on demand!</h1>
+  </body>
+</html>
+```
+
+### Server Output Mode
+
+For apps that are mostly dynamic, use `output: 'server'`:
+
+```js
+export default defineConfig({
+  output: 'server',
+  adapter: netlify(),
+});
+```
+
+Now all pages are server-rendered by default. Opt out on static pages:
+
+```astro
+---
+export const prerender = true;
+---
+<html>
+  <body>
+    <h1>This page is static!</h1>
+  </body>
+</html>
+```
+
+## SSR Features
+
+### Cookies
+
+Read and write cookies in server-rendered pages:
+
+```astro
+---
+export const prerender = false;
+
+let counter = 0;
+
+if (Astro.cookies.has('counter')) {
+  const cookie = Astro.cookies.get('counter');
+  counter = cookie.number() + 1;
+}
+
+Astro.cookies.set('counter', String(counter));
+---
+
+<html>
+  <body>
+    <h1>Counter: {counter}</h1>
+  </body>
+</html>
+```
+
+### Response Headers
+
+Set response status and headers:
+
+```astro
+---
+export const prerender = false;
+
+import { getProduct } from '../api';
+
+const product = await getProduct(Astro.params.id);
+
+if (!product) {
+  Astro.response.status = 404;
+  Astro.response.statusText = 'Not found';
+}
+---
+```
+
+Set custom headers:
+
+```astro
+---
+export const prerender = false;
+
+Astro.response.headers.set('Cache-Control', 'public, max-age=3600');
+---
+```
+
+### Request Data
+
+Access request information:
+
+```astro
+---
+export const prerender = false;
+
+const cookie = Astro.request.headers.get('cookie');
+const method = Astro.request.method;
+const url = Astro.request.url;
+---
+
+<p>Method: {method}</p>
+<p>URL: {url}</p>
+```
+
+### Returning Responses
+
+Return custom `Response` objects:
+
+```astro
+---
+export const prerender = false;
+
+import { getProduct } from '../api';
+
+const product = await getProduct(Astro.params.id);
+
+if (!product) {
+  return new Response(null, {
+    status: 404,
+    statusText: 'Not found'
+  });
+}
+
+if (!product.isAvailable) {
+  return Astro.redirect('/products', 301);
+}
+---
+
+<html>
+  <body>
+    <h1>{product.name}</h1>
+  </body>
+</html>
+```
+
+### Server Endpoints
+
+Create API routes in `src/pages/` with `.js` or `.ts` files:
+
+```js
+export async function GET() {
+  return new Response(
+    JSON.stringify({
+      message: 'Hello, World!'
+    })
+  );
+}
+```
+
+```js
+export const prerender = false;
+
+export async function GET() {
+  const number = Math.random();
+  return new Response(
+    JSON.stringify({
+      number,
+      message: `Here's a random number: ${number}`
+    })
+  );
+}
+```
+
+Endpoints support all HTTP methods:
+
+```js
+export async function GET({ params, request }) {
+  // Handle GET
+}
+
+export async function POST({ request }) {
+  const data = await request.json();
+  // Handle POST
+  return new Response(JSON.stringify({ success: true }));
+}
+
+export async function DELETE({ params }) {
+  // Handle DELETE
+}
+```
+
+### HTML Streaming
+
+SSR pages use HTML streaming automatically, sending content to the browser as it's rendered. This ensures fast Time to First Byte (TTFB).
+
+<Note>
+Features that modify response headers are only available at the page level, not in components.
+</Note>
+
+## Hybrid Rendering
+
+Mix static and dynamic pages in the same project:
+
+```js
+// Static by default
+export default defineConfig({
+  output: 'static',
+  adapter: netlify(),
+});
+```
+
+```astro
+// Make specific pages dynamic
+---
+export const prerender = false;
+---
+```
+
+Or render most pages dynamically:
+
+```js
+// Dynamic by default
+export default defineConfig({
+  output: 'server',
+  adapter: netlify(),
+});
+```
+
+```astro
+// Make specific pages static
+---
+export const prerender = true;
+---
+```
+
+## Dynamic Routes with SSR
+
+### Static Sites
+
+Use `getStaticPaths()` to generate routes at build time:
+
+```astro
+---
+import { getCollection } from 'astro:content';
+
+export async function getStaticPaths() {
+  const posts = await getCollection('blog');
+  return posts.map(post => ({
+    params: { slug: post.slug },
+    props: { post },
+  }));
+}
+
+const { post } = Astro.props;
+---
+
+<article>
+  <h1>{post.data.title}</h1>
+</article>
+```
+
+### SSR Sites
+
+Fetch data on demand:
+
+```astro
+---
+import { getEntry } from 'astro:content';
+
+const { slug } = Astro.params;
+if (!slug) return Astro.redirect('/404');
+
+const post = await getEntry('blog', slug);
+if (!post) return Astro.redirect('/404');
+---
+
+<article>
+  <h1>{post.data.title}</h1>
+</article>
+```
+
+## Adapter Configuration
+
+Different adapters may have specific configuration options. Check each adapter's documentation:
+
+```js
+import { defineConfig } from 'astro/config';
+import netlify from '@astrojs/netlify';
+
+export default defineConfig({
+  adapter: netlify({
+    edgeMiddleware: true,
+    imageCDN: true,
+  }),
+});
+```
+
+## When to Use SSR
+
+Use SSR when you need:
+
+- **Authentication**: Check user sessions and show personalized content
+- **Fresh data**: Display real-time information without rebuilding
+- **User-specific pages**: Customize content per visitor
+- **Form handling**: Process form submissions
+- **API routes**: Create backend endpoints
+- **Cookies and headers**: Access request data
+
+Stick with static rendering when:
+
+- Content doesn't change per user
+- Performance is critical (static is fastest)
+- You want to deploy to any static host
+- Content only changes when you deploy

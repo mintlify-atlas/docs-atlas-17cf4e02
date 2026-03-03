@@ -1,0 +1,414 @@
+---
+title: View Transitions
+description: Enable seamless navigation between pages with animated transitions in Astro.
+---
+
+View transitions are animated transitions between different website views, preserving visual continuity as visitors navigate your site.
+
+## What are View Transitions?
+
+Astro's view transitions support is powered by the View Transitions browser API and includes:
+
+- Built-in animations (`fade`, `slide`, `none`)
+- Forwards and backwards navigation animations
+- Custom animation support
+- Persistent elements across navigation
+- Client-side routing with the `<ClientRouter />` component
+- Fallback support for unsupported browsers
+- Automatic `prefers-reduced-motion` support
+
+## Enabling View Transitions
+
+Import and add the `<ClientRouter />` component to your common `<head>` or layout:
+
+```astro
+---
+import { ClientRouter } from "astro:transitions";
+---
+<head>
+  <title>My Site</title>
+  <ClientRouter />
+</head>
+```
+
+This enables default page animations and client-side routing site-wide.
+
+## Transition Directives
+
+Control transition behavior with `transition:*` directives:
+
+### transition:name
+
+Identify matching elements across pages:
+
+```astro
+<!-- old-page.astro -->
+<aside transition:name="hero">
+
+<!-- new-page.astro -->
+<aside transition:name="hero">
+```
+
+### transition:animate
+
+Specify animation type:
+
+```astro
+<header transition:animate="slide">
+  <h1>My Header</h1>
+</header>
+```
+
+Built-in animations:
+
+- `fade` (default) - Crossfade animation
+- `slide` - Slides old content out, new content in
+- `initial` - Use browser's default
+- `none` - Disable animations
+
+### transition:persist
+
+Persist elements across navigation:
+
+```astro
+<video controls autoplay transition:persist>
+  <source src="video.mp4" type="video/mp4" />
+</video>
+```
+
+Persist framework components with state:
+
+```astro
+<Counter client:load transition:persist initialCount={5} />
+```
+
+Shorthand with name:
+
+```astro
+<video transition:persist="media-player">
+```
+
+## Custom Animations
+
+### Customizing Built-in Animations
+
+```astro
+---
+import { fade } from "astro:transitions";
+---
+<header transition:animate={fade({ duration: "0.4s" })}>
+```
+
+### Creating Custom Animations
+
+<Steps>
+1. Define keyframes in a global style tag:
+
+   ```astro
+   <style is:global>
+     @keyframes bump {
+       0% {
+         opacity: 0;
+         transform: scale(1) translateX(200px);
+       }
+       50% {
+         opacity: 0.5;
+         transform: scale(1.1);
+       }
+       100% {
+         opacity: 1;
+         transform: scale(1) translateX(0);
+       }
+     }
+   </style>
+   ```
+
+2. Define animation behavior in frontmatter:
+
+   ```astro
+   ---
+   const anim = {
+     old: {
+       name: "bump",
+       duration: "0.5s",
+       easing: "ease-in",
+       direction: "reverse",
+     },
+     new: {
+       name: "bump",
+       duration: "0.5s",
+       easing: "ease-in-out",
+     },
+   };
+   
+   const customTransition = {
+     forwards: anim,
+     backwards: anim,
+   };
+   ---
+   <header transition:animate={customTransition}>
+   ```
+</Steps>
+
+## Router Control
+
+### Preventing Client-side Navigation
+
+Opt out of routing on specific links:
+
+```astro
+<a href="/articles/emperor-penguins" data-astro-reload>
+```
+
+### Trigger Navigation Programmatically
+
+Use `navigate()` from `astro:transitions/client`:
+
+```astro
+<script>
+  import { navigate } from "astro:transitions/client";
+  
+  document.querySelector("select").onchange = (event) => {
+    navigate(event.target.value);
+  };
+</script>
+
+<select>
+  <option value="/play">Play</option>
+  <option value="/blog">Blog</option>
+  <option value="/about">About</option>
+</select>
+```
+
+### Browser History Control
+
+Control history entries with `data-astro-history`:
+
+```astro
+<a href="/main" data-astro-history="replace">
+```
+
+Options:
+- `push` - Add new entry (default)
+- `replace` - Replace current entry
+- `auto` - Attempt push, fall back if needed
+
+### Form Transitions
+
+Forms support view transitions for both GET and POST:
+
+```astro
+<form
+  action="/contact"
+  method="POST"
+  enctype="application/x-www-form-urlencoded"
+>
+```
+
+Opt out with `data-astro-reload`:
+
+```astro
+<form action="/contact" data-astro-reload>
+```
+
+## Lifecycle Events
+
+Listen to navigation events to customize behavior:
+
+### astro:before-preparation
+
+Fires before loading starts:
+
+```astro
+<script is:inline>
+  document.addEventListener("astro:before-preparation", (event) => {
+    const originalLoader = event.loader;
+    event.loader = async function () {
+      const { startSpinner } = await import("./spinner.js");
+      const stop = startSpinner();
+      await originalLoader();
+      stop();
+    };
+  });
+</script>
+```
+
+### astro:after-preparation
+
+Fires after content is loaded:
+
+```astro
+<script is:inline>
+  document.addEventListener("astro:before-preparation", () => {
+    document.querySelector("#loading").classList.add("show");
+  });
+  document.addEventListener("astro:after-preparation", () => {
+    document.querySelector("#loading").classList.remove("show");
+  });
+</script>
+```
+
+### astro:before-swap
+
+Fires before the new document replaces the old:
+
+```astro
+<script>
+  document.addEventListener("astro:before-swap", (event) => {
+    event.newDocument.documentElement.dataset.theme =
+      localStorage.getItem("darkMode") ? "dark" : "light";
+  });
+</script>
+```
+
+### astro:after-swap
+
+Fires after page swap:
+
+```js
+document.addEventListener("astro:after-swap", () => {
+  window.scrollTo({ left: 0, top: 0, behavior: "instant" });
+});
+```
+
+### astro:page-load
+
+Fires when navigation completes:
+
+```astro
+<script>
+  document.addEventListener("astro:page-load", () => {
+    // Runs on every navigation
+    setupEventListeners();
+  });
+</script>
+```
+
+## Script Behavior
+
+### Script Re-execution
+
+Bundled module scripts execute once. Inline scripts may re-execute.
+
+Wrap scripts in event listeners:
+
+```js
+document.addEventListener("astro:page-load", () => {
+  document.querySelector(".hamburger").addEventListener("click", () => {
+    document.querySelector(".nav-links").classList.toggle("expanded");
+  });
+});
+```
+
+### Force Re-run with data-astro-rerun
+
+```astro
+<script is:inline data-astro-rerun>
+  // This runs on every navigation
+</script>
+```
+
+### Preserve Global State
+
+```astro
+<script is:inline>
+  if (!window.SomeGlobal) {
+    window.SomeGlobal = {};
+  }
+</script>
+```
+
+## Fallback Control
+
+Configure fallback for unsupported browsers:
+
+```astro
+<ClientRouter fallback="swap" />
+```
+
+Options:
+- `animate` (default) - Simulate transitions
+- `swap` - Immediate page replacement
+- `none` - Full page navigation
+
+## Accessibility
+
+### Route Announcement
+
+The `<ClientRouter />` automatically announces route changes for screen readers using the page title, first `<h1>`, or pathname.
+
+<Tip>
+Always include a `<title>` for accessibility.
+</Tip>
+
+### prefers-reduced-motion
+
+All animations are automatically disabled when `prefers-reduced-motion` is detected.
+
+## Client-side Navigation Process
+
+When using `<ClientRouter />`:
+
+<Steps>
+1. Visitor triggers navigation (click, back/forward button)
+2. Router fetches the next page
+3. Router adds `data-astro-transition` attribute
+4. Browser's `startViewTransition` is called
+5. Router performs swap:
+   - Head elements are updated
+   - Body is replaced
+   - Persistent elements are moved
+   - Scroll position is restored
+6. New stylesheets load
+7. New scripts execute
+8. `astro:page-load` event fires
+</Steps>
+
+## Best Practices
+
+### Theme Persistence
+
+```astro
+<script is:inline>
+  function applyTheme() {
+    localStorage.theme === "dark"
+      ? document.documentElement.classList.add("dark")
+      : document.documentElement.classList.remove("dark");
+  }
+  
+  document.addEventListener("astro:after-swap", applyTheme);
+  applyTheme();
+</script>
+```
+
+### Loading Indicators
+
+```astro
+<script>
+  document.addEventListener("astro:before-preparation", () => {
+    document.getElementById("loading").style.display = "block";
+  });
+  
+  document.addEventListener("astro:page-load", () => {
+    document.getElementById("loading").style.display = "none";
+  });
+</script>
+```
+
+### Validate User Input
+
+Sanitize URLs before passing to `navigate()`:
+
+```astro
+<script>
+  import { navigate } from 'astro:transitions/client';
+  
+  const params = new URLSearchParams(window.location.search);
+  const redirect = params.get('redirect');
+  const allowedPaths = ['/home', '/about', '/contact'];
+  
+  if (allowedPaths.includes(redirect)) {
+    navigate(redirect);
+  }
+</script>
+```

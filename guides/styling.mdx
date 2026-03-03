@@ -1,0 +1,393 @@
+---
+title: Styling and CSS
+description: Learn how to style components in Astro with scoped styles, external CSS, and tooling like Sass and Tailwind.
+---
+
+Astro makes styling easy. Write CSS directly in components, import stylesheets, or use your favorite CSS framework like Tailwind.
+
+## Scoped Styles
+
+Add a `<style>` tag to any `.astro` component for automatic CSS scoping:
+
+```astro
+<style>
+  h1 { color: red; }
+  .text { color: blue; }
+</style>
+```
+
+Scoped styles are compiled with unique attributes and only apply to that component:
+
+```astro
+<style>
+  h1[data-astro-cid-hhnqfkh6] {
+    color: red;
+  }
+</style>
+```
+
+Scoped styles don't leak to child components. To style children, wrap them in a container you can target.
+
+## Global Styles
+
+Opt out of scoping with `is:global`:
+
+```astro
+<style is:global>
+  h1 { color: red; }
+</style>
+```
+
+Mix global and scoped styles using `:global()`:
+
+```astro
+<style>
+  h1 { color: red; } /* scoped */
+  article :global(h1) { color: blue; } /* applies to child h1s */
+</style>
+```
+
+## Dynamic Classes
+
+Use `class:list` for conditional classes:
+
+```astro
+---
+const { isRed } = Astro.props;
+---
+<div class:list={['box', { red: isRed }]}>
+  <slot />
+</div>
+
+<style>
+  .box { border: 1px solid blue; }
+  .red { border-color: red; }
+</style>
+```
+
+## CSS Variables
+
+Pass variables from frontmatter with `define:vars`:
+
+```astro
+---
+const foregroundColor = "rgb(221 243 228)";
+const backgroundColor = "rgb(24 121 78)";
+---
+<style define:vars={{ foregroundColor, backgroundColor }}>
+  h1 {
+    background-color: var(--backgroundColor);
+    color: var(--foregroundColor);
+  }
+</style>
+<h1>Hello</h1>
+```
+
+## Passing Classes to Children
+
+Accept and apply a `class` prop in child components:
+
+```astro
+---
+const { class: className, ...rest } = Astro.props;
+---
+<div class={className} {...rest}>
+  <slot/>
+</div>
+```
+
+Use it in parent components:
+
+```astro
+<style>
+  .red { color: red; }
+</style>
+<MyComponent class="red">This will be red!</MyComponent>
+```
+
+## External Stylesheets
+
+### Import Local Stylesheets
+
+Import CSS files in your component frontmatter:
+
+```astro
+---
+import '../styles/utils.css';
+---
+<html><!-- Your page --></html>
+```
+
+### Import from npm Packages
+
+Import stylesheets from npm packages:
+
+```astro
+---
+import 'package-name/styles.css';
+---
+```
+
+If the package doesn't use file extensions, configure Vite:
+
+```js
+// astro.config.mjs
+export default defineConfig({
+  vite: {
+    ssr: {
+      noExternal: ['package-name'],
+    }
+  }
+});
+```
+
+### Link Tags
+
+Load stylesheets from `public/` or external URLs:
+
+```astro
+<head>
+  <link rel="stylesheet" href="/styles/global.css" />
+  <link rel="stylesheet" href="https://cdn.example.com/style.css" />
+</head>
+```
+
+## CSS Cascade Order
+
+CSS is evaluated in this order:
+
+1. `<link>` tags (lowest precedence)
+2. Imported styles
+3. Scoped styles (highest precedence)
+
+Scoped styles always come last but may be overridden by more specific selectors from imports.
+
+## Tailwind CSS
+
+### Add Tailwind 4
+
+Install Tailwind using the Astro CLI:
+
+<CodeGroup>
+  ```bash npm
+  npx astro add tailwind
+  ```
+  
+  ```bash pnpm
+  pnpm astro add tailwind
+  ```
+  
+  ```bash yarn
+  yarn astro add tailwind
+  ```
+</CodeGroup>
+
+Import Tailwind in your CSS:
+
+```css
+/* src/styles/global.css */
+@import "tailwindcss";
+```
+
+Then import this file in your layout:
+
+```astro
+---
+import "../styles/global.css";
+---
+```
+
+### Upgrade from Tailwind 3
+
+<Steps>
+1. Add Tailwind 4 support via CLI or manual installation
+
+2. Uninstall the old integration:
+
+   <CodeGroup>
+     ```bash npm
+     npm uninstall @astrojs/tailwind
+     ```
+     
+     ```bash pnpm
+     pnpm remove @astrojs/tailwind
+     ```
+     
+     ```bash yarn
+     yarn remove @astrojs/tailwind
+     ```
+   </CodeGroup>
+
+3. Remove from config:
+
+   ```js
+   // Remove this line
+   import tailwind from '@astrojs/tailwind';
+   
+   export default defineConfig({
+     integrations: [], // Remove tailwind()
+   });
+   ```
+</Steps>
+
+## CSS Preprocessors
+
+Astro supports Sass, Stylus, and Less via Vite.
+
+### Sass
+
+```bash
+npm install sass
+```
+
+Use in components:
+
+```astro
+<style lang="scss">
+  $color: red;
+  h1 { color: $color; }
+</style>
+```
+
+### Stylus
+
+```bash
+npm install stylus
+```
+
+```astro
+<style lang="stylus">
+  color = red
+  h1
+    color: color
+</style>
+```
+
+### Less
+
+```bash
+npm install less
+```
+
+```astro
+<style lang="less">
+  @color: red;
+  h1 { color: @color; }
+</style>
+```
+
+### LightningCSS
+
+```bash
+npm install lightningcss
+```
+
+Configure in `astro.config.mjs`:
+
+```js
+export default defineConfig({
+  vite: {
+    css: {
+      transformer: "lightningcss",
+    },
+  },
+});
+```
+
+## PostCSS
+
+Create a `postcss.config.cjs` file:
+
+```js
+module.exports = {
+  plugins: [
+    require('autoprefixer'),
+    require('cssnano'),
+  ],
+};
+```
+
+## Framework Styles
+
+### React / Preact
+
+```jsx
+import './global.css';
+import Styles from './styles.module.css';
+```
+
+### Vue
+
+```vue
+<style lang="scss" scoped>
+  h1 { color: red; }
+</style>
+```
+
+### Svelte
+
+```svelte
+<style lang="scss">
+  h1 { color: red; }
+</style>
+```
+
+## Markdown Styling
+
+Style Markdown by:
+
+- Adding imported stylesheets to your layout
+- Using `<style is:global>` in the layout
+- Adding CSS integrations like Tailwind with the typography plugin
+
+## Production Builds
+
+### Bundle Control
+
+Astro minifies and bundles CSS automatically. Shared CSS is split into chunks for reuse. Styles above 4kB are linked, smaller ones are inlined.
+
+Configure the inline threshold:
+
+```js
+export default defineConfig({
+  vite: {
+    build: {
+      assetsInlineLimit: 1024,
+    }
+  },
+});
+```
+
+Control stylesheet inlining:
+
+```js
+export default defineConfig({
+  build: {
+    inlineStylesheets: 'never' // or 'always'
+  }
+});
+```
+
+## Advanced Imports
+
+### Raw CSS
+
+Import CSS as a string:
+
+```astro
+---
+import rawStyles from '../styles/main.css?raw';
+---
+<style is:inline set:html={rawStyles}></style>
+```
+
+### URL References
+
+Get a direct URL to a CSS file:
+
+```astro
+---
+import stylesUrl from '../styles/main.css?url';
+---
+<link rel="stylesheet" href={stylesUrl}>
+```

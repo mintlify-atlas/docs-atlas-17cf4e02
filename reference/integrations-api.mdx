@@ -1,0 +1,428 @@
+---
+title: Integration API
+description: Complete reference for creating Astro integrations with lifecycle hooks and configuration options.
+---
+
+The Integration API allows you to extend Astro with custom functionality through lifecycle hooks. Build integrations to add UI framework support, inject middleware, add dev toolbar apps, and more.
+
+## When to use this API
+
+Use the Integration API when you need to:
+
+- Add support for UI frameworks (React, Vue, Svelte, etc.)
+- Inject routes, scripts, or styles into every page
+- Add middleware to intercept requests
+- Modify the Vite or Astro configuration
+- Hook into the build process
+- Add custom dev toolbar apps
+- Extend TypeScript types in user projects
+
+## Creating an integration
+
+An integration is an object with a `name` and `hooks` property:
+
+```ts
+export default function myIntegration() {
+  return {
+    name: 'my-integration',
+    hooks: {
+      'astro:config:setup': ({ updateConfig }) => {
+        // Hook implementation
+      }
+    }
+  };
+}
+```
+
+## Lifecycle hooks
+
+Integrations execute during specific lifecycle events. All hooks receive a `logger` option for writing logs.
+
+### astro:config:setup
+
+Runs on initialization before Vite or Astro config have resolved. Use this to extend the project configuration.
+
+<ParamField path="config" type="AstroConfig">
+  Read-only copy of the user-supplied Astro config, resolved before other integrations run.
+</ParamField>
+
+<ParamField path="command" type="'dev' | 'build' | 'preview' | 'sync'">
+  The command being executed:
+  - `dev` - Running `astro dev`
+  - `build` - Running `astro build`
+  - `preview` - Running `astro preview`
+  - `sync` - Running `astro sync`
+</ParamField>
+
+<ParamField path="isRestart" type="boolean">
+  `false` when dev server starts, `true` when reload is triggered. Useful to detect when this function is called more than once.
+</ParamField>
+
+<ParamField path="updateConfig" type="(newConfig: DeepPartial<AstroConfig>) => AstroConfig">
+  Callback function to update the Astro config. Config is merged with user config and other integration updates.
+
+  ```js
+  updateConfig({
+    vite: {
+      plugins: [myVitePlugin()],
+    }
+  })
+  ```
+</ParamField>
+
+<ParamField path="addRenderer" type="(renderer: AstroRenderer) => void">
+  Adds a component framework renderer (React, Vue, Svelte, etc.).
+
+  ```js
+  addRenderer({
+    name: 'my-renderer',
+    serverEntrypoint: './server.js',
+    clientEntrypoint: './client.js'
+  })
+  ```
+</ParamField>
+
+<ParamField path="addWatchFile" type="(path: URL | string) => void">
+  Adds a file to watch. When changed, the dev server will reload.
+
+  ```js
+  addWatchFile(new URL('./config.json', import.meta.url))
+  ```
+</ParamField>
+
+<ParamField path="addClientDirective" type="(directive: ClientDirectiveConfig) => void">
+  Adds a custom client directive for use in `.astro` files.
+
+  ```js
+  addClientDirective({
+    name: 'click',
+    entrypoint: './click-directive.js'
+  })
+  ```
+</ParamField>
+
+<ParamField path="addMiddleware" type="(middleware: AstroIntegrationMiddleware) => void">
+  Adds middleware to run on each request.
+
+  ```js
+  addMiddleware({
+    entrypoint: '@my-package/middleware',
+    order: 'pre' // or 'post'
+  })
+  ```
+</ParamField>
+
+<ParamField path="addDevToolbarApp" type="(entrypoint: DevToolbarAppEntry) => void">
+  Adds a custom dev toolbar app.
+
+  ```js
+  addDevToolbarApp({
+    id: 'my-plugin',
+    name: 'My Plugin',
+    entrypoint: './toolbar-app.js'
+  })
+  ```
+</ParamField>
+
+<ParamField path="injectScript" type="(stage: InjectedScriptStage, content: string) => void">
+  Injects a JavaScript string onto every page.
+
+  Stages:
+  - `head-inline` - In `<head>`, not optimized by Vite
+  - `before-hydration` - Client-side, before hydration, optimized by Vite
+  - `page` - In `<script type="module">`, bundled by Vite
+  - `page-ssr` - In frontmatter, runs once on import
+
+  ```js
+  injectScript('page-ssr', 'import "global-styles.css";')
+  ```
+</ParamField>
+
+<ParamField path="injectRoute" type="(route: InjectedRoute) => void">
+  Injects routes into the project.
+
+  ```js
+  injectRoute({
+    pattern: '/admin',
+    entrypoint: './admin-page.astro'
+  })
+  ```
+</ParamField>
+
+<ParamField path="createCodegenDir" type="() => URL">
+  Creates and returns the path to `.astro/integrations/<integration-name>/`.
+
+  ```js
+  const codegenDir = createCodegenDir()
+  writeFileSync(new URL('cache.json', codegenDir), '{}')
+  ```
+</ParamField>
+
+### astro:config:done
+
+Runs after Astro config has resolved and other integrations have run. Use this to read the final config.
+
+<ParamField path="config" type="AstroConfig">
+  Final resolved Astro config after all integrations have run.
+</ParamField>
+
+<ParamField path="setAdapter" type="(adapter: AstroAdapter) => void">
+  Makes the integration an adapter. See the [Adapter API](/reference/adapter-api).
+</ParamField>
+
+<ParamField path="injectTypes" type="(injectedType: InjectedType) => URL">
+  Injects TypeScript types into the user's project.
+
+  ```js
+  injectTypes({
+    filename: 'types.d.ts',
+    content: 'declare module "virtual:my-integration" {}'
+  })
+  ```
+</ParamField>
+
+<ParamField path="buildOutput" type="'static' | 'server'">
+  The project's build output type based on configuration.
+</ParamField>
+
+### astro:server:setup
+
+Runs just after the Vite server is created in dev mode. Use this to add Vite middleware or enable content refresh.
+
+<ParamField path="server" type="ViteDevServer">
+  Mutable Vite dev server instance.
+
+  ```js
+  server.middlewares.use((req, res, next) => {
+    // Handle requests
+  })
+  ```
+</ParamField>
+
+<ParamField path="toolbar" type="ToolbarServerHelpers">
+  Object with callback functions to interact with the dev toolbar:
+  - `toolbar.on(event, callback)` - Listen for toolbar events
+  - `toolbar.send(event, payload)` - Send messages to toolbar
+  - `toolbar.onAppInitialized(appId, callback)` - Run when app initializes
+  - `toolbar.onAppToggled(appId, callback)` - Run when app toggles
+</ParamField>
+
+<ParamField path="refreshContent" type="(options?: RefreshContentOptions) => Promise<void>">
+  Triggers an update to the content layer during dev.
+
+  ```js
+  await refreshContent({
+    loaders: ['my-loader'],
+    context: { webhookBody }
+  })
+  ```
+</ParamField>
+
+### astro:server:start
+
+Runs just after the server's `listen()` event. Use this to intercept network requests.
+
+<ParamField path="address" type="AddressInfo">
+  The address, family, and port number from Node's `server.address()` method.
+</ParamField>
+
+### astro:server:done
+
+Runs just after the dev server closes. Use this to run cleanup events.
+
+### astro:build:start
+
+Runs after `astro:config:done`, before the production build begins. Use this to set up global objects or clients.
+
+### astro:build:setup
+
+Runs immediately before the build. This is your final chance to modify the Vite config.
+
+<ParamField path="vite" type="InlineConfig">
+  The Vite configuration used in the build.
+</ParamField>
+
+<ParamField path="pages" type="Map<string, PageBuildData>">
+  Map of pages with their build data.
+
+  ```js
+  pages.forEach((data, route) => {
+    if (data.route.pattern.test('/blog')) {
+      console.log(data.route.type)
+    }
+  })
+  ```
+</ParamField>
+
+<ParamField path="target" type="'client' | 'server'">
+  Whether this is the client or server build phase.
+</ParamField>
+
+<ParamField path="updateConfig" type="(newConfig: InlineConfig) => void">
+  Updates the Vite config for the build.
+
+  ```js
+  updateConfig({
+    plugins: [myVitePlugin()]
+  })
+  ```
+</ParamField>
+
+### astro:build:ssr
+
+Runs after a production SSR build completes. Use this to access the SSR manifest and entry points.
+
+<ParamField path="manifest" type="SerializedSSRManifest">
+  Serialized SSR manifest with routing information.
+</ParamField>
+
+<ParamField path="entryPoints" type="Map<IntegrationRouteData, URL>">
+  Map of emitted entry points with route data as key and file URL as value.
+
+  ```js
+  entryPoints.forEach((url, route) => {
+    console.log(url.href)
+  })
+  ```
+</ParamField>
+
+<ParamField path="middlewareEntryPoint" type="URL | undefined">
+  The middleware file path if middleware exists.
+</ParamField>
+
+### astro:build:generated
+
+Runs after static build has finished generating routes and assets. Use this to access generated files before cleanup.
+
+<ParamField path="dir" type="URL">
+  URL path to the build output directory.
+</ParamField>
+
+### astro:build:done
+
+Runs after production build (SSG or SSR) completes. Use this to access generated routes and assets.
+
+<ParamField path="dir" type="URL">
+  URL path to the build output directory.
+</ParamField>
+
+<ParamField path="pages" type="{ pathname: string }[]">
+  List of all generated pages with their finalized paths.
+</ParamField>
+
+<ParamField path="assets" type="Map<string, URL[]>">
+  Map of output file paths grouped by route pattern.
+</ParamField>
+
+## TypeScript interface
+
+```ts
+interface AstroIntegration {
+  name: string;
+  hooks: {
+    'astro:config:setup'?: (options: {
+      config: AstroConfig;
+      command: 'dev' | 'build' | 'preview' | 'sync';
+      isRestart: boolean;
+      updateConfig: (newConfig: DeepPartial<AstroConfig>) => AstroConfig;
+      addRenderer: (renderer: AstroRenderer) => void;
+      addWatchFile: (path: URL | string) => void;
+      addClientDirective: (directive: ClientDirectiveConfig) => void;
+      addMiddleware: (middleware: AstroIntegrationMiddleware) => void;
+      addDevToolbarApp: (entrypoint: DevToolbarAppEntry) => void;
+      injectScript: (stage: InjectedScriptStage, content: string) => void;
+      injectRoute: (injectedRoute: InjectedRoute) => void;
+      createCodegenDir: () => URL;
+      logger: AstroIntegrationLogger;
+    }) => void | Promise<void>;
+    'astro:config:done'?: (options: {
+      config: AstroConfig;
+      setAdapter: (adapter: AstroAdapter) => void;
+      injectTypes: (injectedType: InjectedType) => URL;
+      logger: AstroIntegrationLogger;
+      buildOutput: 'static' | 'server';
+    }) => void | Promise<void>;
+    'astro:server:setup'?: (options: {
+      server: ViteDevServer;
+      logger: AstroIntegrationLogger;
+      toolbar: ToolbarServerHelpers;
+      refreshContent?: (options: RefreshContentOptions) => Promise<void>;
+    }) => void | Promise<void>;
+    'astro:server:start'?: (options: {
+      address: AddressInfo;
+      logger: AstroIntegrationLogger;
+    }) => void | Promise<void>;
+    'astro:server:done'?: (options: {
+      logger: AstroIntegrationLogger;
+    }) => void | Promise<void>;
+    'astro:build:start'?: (options: {
+      logger: AstroIntegrationLogger;
+    }) => void | Promise<void>;
+    'astro:build:setup'?: (options: {
+      vite: InlineConfig;
+      pages: Map<string, PageBuildData>;
+      target: 'client' | 'server';
+      updateConfig: (newConfig: InlineConfig) => void;
+      logger: AstroIntegrationLogger;
+    }) => void | Promise<void>;
+    'astro:build:ssr'?: (options: {
+      manifest: SerializedSSRManifest;
+      entryPoints: Map<IntegrationRouteData, URL>;
+      middlewareEntryPoint: URL | undefined;
+      logger: AstroIntegrationLogger;
+    }) => void | Promise<void>;
+    'astro:build:generated'?: (options: {
+      dir: URL;
+      logger: AstroIntegrationLogger;
+    }) => void | Promise<void>;
+    'astro:build:done'?: (options: {
+      pages: { pathname: string }[];
+      dir: URL;
+      assets: Map<string, URL[]>;
+      logger: AstroIntegrationLogger;
+    }) => void | Promise<void>;
+  };
+}
+```
+
+## Example integration
+
+```ts
+import type { AstroIntegration } from 'astro';
+
+export default function myIntegration(): AstroIntegration {
+  return {
+    name: 'my-integration',
+    hooks: {
+      'astro:config:setup': ({ updateConfig, addMiddleware, logger }) => {
+        logger.info('Setting up integration');
+        
+        // Add Vite plugin
+        updateConfig({
+          vite: {
+            plugins: [myVitePlugin()]
+          }
+        });
+        
+        // Add middleware
+        addMiddleware({
+          entrypoint: './middleware.js',
+          order: 'pre'
+        });
+      },
+      
+      'astro:config:done': ({ config, injectTypes }) => {
+        // Inject types
+        injectTypes({
+          filename: 'types.d.ts',
+          content: 'declare module "virtual:my-integration" {}'
+        });
+      },
+      
+      'astro:build:done': ({ dir, pages, logger }) => {
+        logger.info(`Built ${pages.length} pages to ${dir}`);
+      }
+    }
+  };
+}
+```

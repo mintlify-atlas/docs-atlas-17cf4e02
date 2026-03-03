@@ -1,0 +1,812 @@
+---
+title: Configuration Reference
+description: Complete reference for astro.config.mjs configuration options
+---
+
+The following reference covers all supported configuration options in Astro. To learn more about configuring Astro, read the guide on Configuring Astro.
+
+## Basic Setup
+
+```js astro.config.mjs
+import { defineConfig } from 'astro/config'
+
+export default defineConfig({
+  // your configuration options here...
+})
+```
+
+## Top-Level Options
+
+<ParamField path="site" type="string">
+  Your final, deployed URL. Astro uses this full URL to generate your sitemap and canonical URLs in your final build. It is strongly recommended that you set this configuration to get the most out of Astro.
+
+  ```js
+  {
+    site: 'https://www.my-site.dev'
+  }
+  ```
+</ParamField>
+
+<ParamField path="base" type="string">
+  The base path to deploy to. Astro will use this path as the root for your pages and assets both in development and in production build.
+
+  In the example below, `astro dev` will start your server at `/docs`.
+
+  ```js
+  {
+    base: '/docs'
+  }
+  ```
+
+  When using this option, all of your static asset imports and URLs should add the base as a prefix. You can access this value via `import.meta.env.BASE_URL`.
+</ParamField>
+
+<ParamField path="trailingSlash" type="'always' | 'never' | 'ignore'" default="'ignore'">
+  Set the route matching behavior for trailing slashes in the dev server and on-demand rendered pages.
+
+  - `'ignore'` - Match URLs regardless of whether a trailing "/" exists
+  - `'always'` - Only match URLs that include a trailing slash (e.g: "/about/")
+  - `'never'` - Only match URLs that do not include a trailing slash (e.g: "/about")
+
+  ```js
+  {
+    trailingSlash: 'always'
+  }
+  ```
+</ParamField>
+
+<ParamField path="redirects" type="Record<string, RedirectConfig>" default="{}">
+  Specify a mapping of redirects where the key is the route to match and the value is the path to redirect to.
+
+  You can redirect both static and dynamic routes, but only to the same kind of route.
+
+  ```js
+  export default defineConfig({
+    redirects: {
+      '/old': '/new',
+      '/blog/[...slug]': '/articles/[...slug]',
+      '/about': 'https://example.com/about',
+      '/news': {
+        status: 302,
+        destination: 'https://example.com/news'
+      }
+    }
+  })
+  ```
+</ParamField>
+
+<ParamField path="output" type="'static' | 'server'" default="'static'">
+  Specifies the output target for builds.
+
+  - `'static'` - Prerender all your pages by default, outputting a completely static site
+  - `'server'` - Use server-side rendering (SSR) for all pages by default
+
+  ```js
+  export default defineConfig({
+    output: 'static'
+  })
+  ```
+</ParamField>
+
+<ParamField path="adapter" type="AstroIntegration">
+  Deploy to your favorite server, serverless, or edge host with build adapters. Import one of our first-party adapters (Cloudflare, Netlify, Node.js, Vercel) to enable on-demand rendering.
+
+  ```js
+  import netlify from '@astrojs/netlify';
+  {
+    adapter: netlify()
+  }
+  ```
+</ParamField>
+
+<ParamField path="integrations" type="AstroIntegration[]">
+  Extend Astro with custom integrations. Integrations are your one-stop-shop for adding framework support (like Solid.js), new features (like sitemaps), and new libraries (like Partytown).
+
+  ```js
+  import react from '@astrojs/react';
+  import mdx from '@astrojs/mdx';
+  {
+    integrations: [react(), mdx()]
+  }
+  ```
+</ParamField>
+
+## Directory Options
+
+<ParamField path="root" type="string" default="'.'">
+  You should only provide this option if you run the `astro` CLI commands in a directory other than the project root directory.
+
+  ```js
+  {
+    root: './my-project-directory'
+  }
+  ```
+</ParamField>
+
+<ParamField path="srcDir" type="string" default="'./src'">
+  Set the directory that Astro will read your site from. The value can be either an absolute file system path or a path relative to the project root.
+
+  ```js
+  {
+    srcDir: './www'
+  }
+  ```
+</ParamField>
+
+<ParamField path="publicDir" type="string" default="'./public'">
+  Set the directory for your static assets. Files in this directory are served at `/` during dev and copied to your build directory during build.
+
+  ```js
+  {
+    publicDir: './my-custom-publicDir-directory'
+  }
+  ```
+</ParamField>
+
+<ParamField path="outDir" type="string" default="'./dist'">
+  Set the directory that `astro build` writes your final build to.
+
+  ```js
+  {
+    outDir: './my-custom-build-directory'
+  }
+  ```
+</ParamField>
+
+<ParamField path="cacheDir" type="string" default="'./node_modules/.astro'">
+  Set the directory for caching build artifacts. Files in this directory will be used in subsequent builds to speed up the build time.
+
+  ```js
+  {
+    cacheDir: './my-custom-cache-directory'
+  }
+  ```
+</ParamField>
+
+## Build Options
+
+<ParamField path="build.format" type="'file' | 'directory' | 'preserve'" default="'directory'">
+  Control the output file format of each page.
+
+  - `'file'`: Astro will generate an HTML file named for each page route
+  - `'directory'`: Astro will generate a directory with a nested `index.html` file for each page
+  - `'preserve'`: Astro will generate HTML files exactly as they appear in your source folder
+
+  ```js
+  {
+    build: {
+      format: 'file'
+    }
+  }
+  ```
+</ParamField>
+
+<ParamField path="build.client" type="string" default="'./client'">
+  Controls the output directory of your client-side CSS and JavaScript when building a website with server-rendered pages. This value is relative to the `outDir`.
+
+  ```js
+  {
+    output: 'server',
+    build: {
+      client: './client'
+    }
+  }
+  ```
+</ParamField>
+
+<ParamField path="build.server" type="string" default="'./server'">
+  Controls the output directory of server JavaScript when building to SSR. This value is relative to the `outDir`.
+
+  ```js
+  {
+    build: {
+      server: './server'
+    }
+  }
+  ```
+</ParamField>
+
+<ParamField path="build.assets" type="string" default="'_astro'">
+  Specifies the directory in the build output where Astro-generated assets (bundled JS and CSS for example) should live.
+
+  ```js
+  {
+    build: {
+      assets: '_custom'
+    }
+  }
+  ```
+</ParamField>
+
+<ParamField path="build.assetsPrefix" type="string | Record<string, string>">
+  Specifies the prefix for Astro-generated asset links. This can be used if assets are served from a different domain than the current site.
+
+  ```js
+  {
+    build: {
+      assetsPrefix: 'https://cdn.example.com'
+    }
+  }
+  ```
+
+  You can also pass an object to specify a different domain for each file type:
+
+  ```js
+  {
+    build: {
+      assetsPrefix: {
+        'js': 'https://js.cdn.example.com',
+        'mjs': 'https://js.cdn.example.com',
+        'css': 'https://css.cdn.example.com',
+        'fallback': 'https://cdn.example.com'
+      }
+    }
+  }
+  ```
+</ParamField>
+
+<ParamField path="build.serverEntry" type="string" default="'entry.mjs'">
+  Specifies the file name of the server entrypoint when building to SSR. This entrypoint is usually dependent on which host you are deploying to.
+
+  ```js
+  {
+    build: {
+      serverEntry: 'main.mjs'
+    }
+  }
+  ```
+</ParamField>
+
+<Accordion title="Advanced Build Options">
+
+<ParamField path="build.redirects" type="boolean" default="true">
+  Specifies whether redirects will be output to HTML during the build. This option only applies to `output: 'static'` mode.
+
+  ```js
+  {
+    build: {
+      redirects: false
+    }
+  }
+  ```
+</ParamField>
+
+<ParamField path="build.inlineStylesheets" type="'always' | 'auto' | 'never'" default="'auto'">
+  Control whether project styles are sent to the browser in a separate css file or inlined into `<style>` tags.
+
+  - `'always'` - project styles are inlined into `<style>` tags
+  - `'auto'` - only stylesheets smaller than 4kb are inlined
+  - `'never'` - project styles are sent in external stylesheets
+
+  ```js
+  {
+    build: {
+      inlineStylesheets: 'never'
+    }
+  }
+  ```
+</ParamField>
+
+<ParamField path="build.concurrency" type="number" default="1">
+  The number of pages to build in parallel.
+
+  **In most cases, you should not change the default value of `1`.**
+
+  ```js
+  {
+    build: {
+      concurrency: 2
+    }
+  }
+  ```
+</ParamField>
+
+</Accordion>
+
+## Server Options
+
+<ParamField path="server.host" type="string | boolean" default="false">
+  Set which network IP addresses the server should listen on.
+
+  - `false` - do not expose on a network IP address
+  - `true` - listen on all addresses, including LAN and public addresses
+  - `[custom-address]` - expose on a network IP address at `[custom-address]`
+</ParamField>
+
+<ParamField path="server.port" type="number" default="4321">
+  Set which port the server should listen on. If the given port is already in use, Astro will automatically try the next available port.
+
+  ```js
+  {
+    server: { port: 8080 }
+  }
+  ```
+</ParamField>
+
+<ParamField path="server.open" type="string | boolean" default="false">
+  Controls whether the dev server should open in your browser window on startup.
+
+  Pass a full URL string (e.g. "http://example.com") or a pathname (e.g. "/about") to specify the URL to open.
+
+  ```js
+  {
+    server: { open: "/about" }
+  }
+  ```
+</ParamField>
+
+<ParamField path="server.headers" type="OutgoingHttpHeaders" default="{}">
+  Set custom HTTP response headers to be sent in `astro dev` and `astro preview`.
+</ParamField>
+
+## Security Options
+
+<ParamField path="security.checkOrigin" type="boolean" default="true">
+  Performs a check that the "origin" header matches the URL sent by each `Request`. This is used to provide Cross-Site Request Forgery (CSRF) protection.
+
+  The "origin" check is executed only for pages rendered on demand, and only for the requests `POST`, `PATCH`, `DELETE` and `PUT`.
+
+  ```js
+  export default defineConfig({
+    output: "server",
+    security: {
+      checkOrigin: false
+    }
+  })
+  ```
+</ParamField>
+
+<Accordion title="Advanced Security Options">
+
+<ParamField path="security.allowedDomains" type="Array<RemotePattern>" default="[]">
+  Defines a list of permitted host patterns for incoming requests when using SSR. When configured, Astro will validate the `X-Forwarded-Host` header against these patterns.
+
+  ```js
+  {
+    security: {
+      allowedDomains: [
+        {
+          hostname: '**.example.com',
+          protocol: 'https'
+        },
+        {
+          hostname: 'staging.myapp.com',
+          protocol: 'https',
+          port: '443'
+        }
+      ]
+    }
+  }
+  ```
+</ParamField>
+
+<ParamField path="security.actionBodySizeLimit" type="number" default="1048576">
+  Sets the maximum size in bytes allowed for action request bodies. By default, action request bodies are limited to 1 MB to prevent abuse.
+
+  ```js
+  export default defineConfig({
+    security: {
+      actionBodySizeLimit: 10 * 1024 * 1024 // 10 MB
+    }
+  })
+  ```
+</ParamField>
+
+</Accordion>
+
+## Image Options
+
+<ParamField path="image.service" type="Object" default="{entrypoint: 'astro/assets/services/sharp', config?: {}}">
+  Set which image service is used for Astro's assets support. The value should be an object with an entrypoint for the image service to use and optionally, a config object to pass to the service.
+
+  ```js
+  {
+    image: {
+      service: {
+        entrypoint: 'astro/assets/services/sharp',
+        config: {
+          limitInputPixels: false,
+        },
+      },
+    },
+  }
+  ```
+</ParamField>
+
+<ParamField path="image.domains" type="Array<string>" default="[]">
+  Defines a list of permitted image source domains for remote image optimization. No other remote images will be optimized by Astro.
+
+  ```js
+  {
+    image: {
+      domains: ['astro.build'],
+    },
+  }
+  ```
+</ParamField>
+
+<ParamField path="image.remotePatterns" type="Array<RemotePattern>" default="[]">
+  Defines a list of permitted image source URL patterns for remote image optimization.
+
+  ```js
+  {
+    image: {
+      remotePatterns: [{
+        protocol: 'https',
+        hostname: '**.amazonaws.com',
+      }],
+    },
+  }
+  ```
+</ParamField>
+
+<Accordion title="Advanced Image Options">
+
+<ParamField path="image.endpoint" type="Object" default="{route: '/_image', entrypoint: undefined}">
+  Set the endpoint to use for image optimization in dev and SSR.
+
+  ```js
+  {
+    image: {
+      endpoint: {
+        route: '/custom_endpoint',
+        entrypoint: 'src/my_endpoint.ts',
+      },
+    },
+  }
+  ```
+</ParamField>
+
+<ParamField path="image.responsiveStyles" type="boolean" default="false">
+  Whether to automatically add global styles for responsive images. You should enable this option unless you are styling the images yourself.
+
+  This option is only used when `layout` is set to `constrained`, `full-width`, or `fixed`.
+</ParamField>
+
+<ParamField path="image.layout" type="ImageLayout">
+  The default layout type for responsive images. Can be overridden by the `layout` prop on the image component.
+
+  - `constrained` - The image will scale to fit the container, maintaining its aspect ratio
+  - `fixed` - The image will maintain its original dimensions
+  - `full-width` - The image will scale to fit the container, maintaining its aspect ratio
+</ParamField>
+
+<ParamField path="image.objectFit" type="ImageFit" default="'cover'">
+  The `object-fit` CSS property value for responsive images. Can be overridden by the `fit` prop on the image component.
+</ParamField>
+
+<ParamField path="image.objectPosition" type="string" default="'center'">
+  The default `object-position` CSS property value for responsive images. Can be overridden by the `position` prop on the image component.
+</ParamField>
+
+<ParamField path="image.breakpoints" type="Array<number>">
+  The breakpoints used to generate responsive images. Requires a value for `layout` to be set.
+</ParamField>
+
+</Accordion>
+
+## Markdown Options
+
+<ParamField path="markdown.syntaxHighlight" type="'shiki' | 'prism' | false" default="'shiki'">
+  Which syntax highlighter to use for Markdown code blocks, if any.
+
+  - `shiki` - use the Shiki highlighter
+  - `prism` - use the Prism highlighter
+  - `false` - do not apply syntax highlighting
+
+  ```js
+  {
+    markdown: {
+      syntaxHighlight: 'prism',
+    }
+  }
+  ```
+</ParamField>
+
+<ParamField path="markdown.shikiConfig" type="Partial<ShikiConfig>">
+  Shiki configuration options. Configure theme, languages, transformers, and more.
+
+  ```js
+  export default defineConfig({
+    markdown: {
+      shikiConfig: {
+        theme: 'dracula',
+        langs: [],
+        wrap: true,
+      },
+    },
+  });
+  ```
+</ParamField>
+
+<ParamField path="markdown.remarkPlugins" type="RemarkPlugins">
+  Pass remark plugins to customize how your Markdown is built. You can import and apply the plugin function (recommended), or pass the plugin name as a string.
+
+  ```js
+  import remarkToc from 'remark-toc';
+  {
+    markdown: {
+      remarkPlugins: [ [remarkToc, { heading: "contents"} ] ]
+    }
+  }
+  ```
+</ParamField>
+
+<ParamField path="markdown.rehypePlugins" type="RehypePlugins">
+  Pass rehype plugins to customize how your Markdown's output HTML is processed.
+
+  ```js
+  import { rehypeAccessibleEmojis } from 'rehype-accessible-emojis';
+  {
+    markdown: {
+      rehypePlugins: [rehypeAccessibleEmojis]
+    }
+  }
+  ```
+</ParamField>
+
+<ParamField path="markdown.gfm" type="boolean" default="true">
+  Astro uses GitHub-flavored Markdown by default. To disable this, set the `gfm` flag to `false`.
+
+  ```js
+  {
+    markdown: {
+      gfm: false,
+    }
+  }
+  ```
+</ParamField>
+
+<ParamField path="markdown.smartypants" type="boolean" default="true">
+  Astro uses the SmartyPants formatter by default. To disable this, set the `smartypants` flag to `false`.
+
+  ```js
+  {
+    markdown: {
+      smartypants: false,
+    }
+  }
+  ```
+</ParamField>
+
+## Internationalization (i18n)
+
+<ParamField path="i18n.locales" type="Locales" required>
+  A list of all locales supported by the website. This is a required field.
+
+  Languages can be listed either as individual codes or mapped to a shared `path` of codes.
+
+  ```js
+  export default defineConfig({
+    i18n: {
+      locales: ['en', 'es', 'pt-br']
+    }
+  })
+  ```
+</ParamField>
+
+<ParamField path="i18n.defaultLocale" type="string" required>
+  The default locale of your website/application. This is a required field and must be one of the specified `locales`.
+
+  ```js
+  export default defineConfig({
+    i18n: {
+      defaultLocale: "en",
+      locales: ["en", "fr"]
+    }
+  })
+  ```
+</ParamField>
+
+<ParamField path="i18n.fallback" type="Record<string, string>">
+  The fallback strategy when navigating to pages that do not exist. Use this object to declare a fallback `locale` route for each language you support.
+
+  ```js
+  export default defineConfig({
+    i18n: {
+      defaultLocale: "en",
+      locales: ["en", "fr", "pt-br", "es"],
+      fallback: {
+        pt: "es",
+        fr: "en"
+      }
+    }
+  })
+  ```
+</ParamField>
+
+<ParamField path="i18n.routing" type="object | 'manual'" default="object">
+  Controls the routing strategy to determine your site URLs. Set this based on your folder/URL path configuration for your default language.
+
+  ```js
+  export default defineConfig({
+    i18n: {
+      defaultLocale: "en",
+      locales: ["en", "fr"],
+      routing: {
+        prefixDefaultLocale: false,
+        redirectToDefaultLocale: true,
+        fallbackType: "redirect",
+      }
+    }
+  })
+  ```
+</ParamField>
+
+<Accordion title="Advanced i18n Options">
+
+<ParamField path="i18n.routing.prefixDefaultLocale" type="boolean" default="false">
+  When `false`, only non-default languages will display a language prefix. When `true`, all URLs will display a language prefix.
+
+  ```js
+  export default defineConfig({
+    i18n: {
+      routing: {
+        prefixDefaultLocale: true,
+      }
+    }
+  })
+  ```
+</ParamField>
+
+<ParamField path="i18n.routing.redirectToDefaultLocale" type="boolean" default="true">
+  Configures whether or not the home URL (`/`) will redirect to `/[defaultLocale]` when `prefixDefaultLocale: true` is set.
+
+  ```js
+  export default defineConfig({
+    i18n: {
+      routing: {
+        prefixDefaultLocale: true,
+        redirectToDefaultLocale: false
+      }
+    }
+  })
+  ```
+</ParamField>
+
+<ParamField path="i18n.routing.fallbackType" type="'redirect' | 'rewrite'" default="'redirect'">
+  When `i18n.fallback` is configured, this option controls whether to redirect to the fallback page, or to rewrite the fallback page's content in place.
+
+  ```js
+  export default defineConfig({
+    i18n: {
+      routing: {
+        fallbackType: "rewrite",
+      },
+      fallback: {
+        fr: "en",
+      }
+    },
+  })
+  ```
+</ParamField>
+
+<ParamField path="i18n.domains" type="Record<string, string>" default="{}">
+  Configures the URL pattern of one or more supported languages to use a custom domain (or sub-domain).
+
+  ```js
+  export default defineConfig({
+    site: "https://example.com",
+    output: "server",
+    i18n: {
+      defaultLocale: "en",
+      locales: ["en", "fr", "es"],
+      domains: {
+        fr: "https://fr.example.com",
+        es: "https://example.es"
+      }
+    },
+  })
+  ```
+</ParamField>
+
+</Accordion>
+
+## Environment Variables
+
+<ParamField path="env.schema" type="EnvSchema" default="{}">
+  An object that uses `envField` to define the data type and properties of your environment variables: `context` (client or server), `access` (public or secret), a `default` value to use, and whether or not this environment variable is `optional`.
+
+  ```js
+  import { defineConfig, envField } from "astro/config"
+
+  export default defineConfig({
+    env: {
+      schema: {
+        API_URL: envField.string({ context: "client", access: "public", optional: true }),
+        PORT: envField.number({ context: "server", access: "public", default: 4321 }),
+        API_SECRET: envField.string({ context: "server", access: "secret" }),
+      }
+    }
+  })
+  ```
+</ParamField>
+
+<ParamField path="env.validateSecrets" type="boolean" default="false">
+  Whether or not to validate secrets on the server when starting the dev server or running a build.
+
+  By default, only public variables are validated on the server. If enabled, private variables will also be checked on start.
+
+  ```js
+  export default defineConfig({
+    env: {
+      validateSecrets: true
+    }
+  })
+  ```
+</ParamField>
+
+## Other Options
+
+<ParamField path="compressHTML" type="boolean" default="true">
+  This is an option to minify your HTML output and reduce the size of your HTML files. By default, Astro removes whitespace from your HTML in a lossless manner.
+
+  ```js
+  {
+    compressHTML: false
+  }
+  ```
+</ParamField>
+
+<ParamField path="scopedStyleStrategy" type="'where' | 'class' | 'attribute'" default="'attribute'">
+  Specify the strategy used for scoping styles within Astro components.
+
+  - `'where'` - Use `:where` selectors, causing no specificity increase
+  - `'class'` - Use class-based selectors, causing a +1 specificity increase
+  - `'attribute'` - Use `data-` attributes, causing a +1 specificity increase
+</ParamField>
+
+<ParamField path="vite" type="ViteUserConfig">
+  Pass additional configuration options to Vite. Useful when Astro doesn't support some advanced configuration that you may need.
+
+  ```js
+  {
+    vite: {
+      ssr: {
+        external: ['broken-npm-package'],
+      }
+    }
+  }
+  ```
+
+  View the full `vite` configuration object documentation on [vite.dev](https://vite.dev/config/).
+</ParamField>
+
+<Accordion title="Dev Toolbar & Prefetch Options">
+
+<ParamField path="devToolbar.enabled" type="boolean" default="true">
+  Whether to enable the Astro Dev Toolbar. This toolbar allows you to inspect your page islands, see helpful audits on performance and accessibility, and more.
+</ParamField>
+
+<ParamField path="devToolbar.placement" type="'bottom-left' | 'bottom-center' | 'bottom-right'" default="'bottom-center'">
+  The default placement of the Astro Dev Toolbar on the screen.
+</ParamField>
+
+<ParamField path="prefetch" type="boolean | object">
+  Enable prefetching for links on your site to provide faster page transitions.
+
+  ```html
+  <a href="/about" data-astro-prefetch>About</a>
+  ```
+</ParamField>
+
+<ParamField path="prefetch.prefetchAll" type="boolean">
+  Enable prefetching for all links, including those without the `data-astro-prefetch` attribute.
+
+  ```js
+  prefetch: {
+    prefetchAll: true
+  }
+  ```
+</ParamField>
+
+<ParamField path="prefetch.defaultStrategy" type="'tap' | 'hover' | 'viewport' | 'load'" default="'hover'">
+  The default prefetch strategy to use when the `data-astro-prefetch` attribute is set on a link with no value.
+
+  - `'tap'`: Prefetch just before you click on the link
+  - `'hover'`: Prefetch when you hover over or focus on the link
+  - `'viewport'`: Prefetch as the links enter the viewport
+  - `'load'`: Prefetch all links on the page after the page is loaded
+</ParamField>
+
+</Accordion>
