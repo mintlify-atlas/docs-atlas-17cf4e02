@@ -1,0 +1,109 @@
+{
+  "projectType": "framework",
+  "projectName": "Astro",
+  "projectDescription": "The web framework for building fast, content-driven websites with any UI framework.",
+  "theme": "palm",
+  "primaryColor": "#8B5CF6",
+  "lightColor": "#A78BFA",
+  "darkColor": "#7C3AED",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Getting Started",
+            "pages": [
+              "introduction",
+              "why-astro",
+              "installation",
+              "project-structure"
+            ]
+          },
+          {
+            "group": "Core Concepts",
+            "pages": [
+              "concepts/islands",
+              "concepts/components",
+              "concepts/pages",
+              "concepts/layouts",
+              "concepts/routing"
+            ]
+          },
+          {
+            "group": "Guides",
+            "pages": [
+              "guides/markdown",
+              "guides/content-collections",
+              "guides/styling",
+              "guides/images",
+              "guides/data-fetching",
+              "guides/server-rendering",
+              "guides/middleware",
+              "guides/view-transitions"
+            ]
+          },
+          {
+            "group": "Integrations",
+            "pages": [
+              "integrations/overview",
+              "integrations/ui-frameworks",
+              "integrations/adapters",
+              "integrations/other"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "API Reference",
+        "groups": [
+          {
+            "group": "Configuration",
+            "pages": [
+              "reference/configuration",
+              "reference/cli"
+            ]
+          },
+          {
+            "group": "Runtime API",
+            "pages": [
+              "reference/api",
+              "reference/directives",
+              "reference/modules"
+            ]
+          },
+          {
+            "group": "Developer APIs",
+            "pages": [
+              "reference/integrations-api",
+              "reference/adapter-api",
+              "reference/container-api"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "Islands Architecture - Zero JS by default with selective hydration",
+    "UI Framework Agnostic - Use React, Vue, Svelte, or any framework",
+    "Server-first rendering for optimal performance",
+    "Content Collections with type-safe frontmatter",
+    "Built-in routing and layouts",
+    "View Transitions for seamless navigation",
+    "Extensive integration ecosystem",
+    "TypeScript support out of the box"
+  ],
+  "publicApiSurface": [
+    "Astro.props - Access component props",
+    "Astro.slots - Render named slots",
+    "Astro.request - Access HTTP request",
+    "Astro.redirect() - Redirect to another page",
+    "getCollection() - Query content collections",
+    "defineConfig() - Configure Astro project",
+    "client:load - Hydrate component on load",
+    "client:visible - Hydrate when visible",
+    "server:defer - Defer server-side rendering",
+    "ViewTransitions - Enable page transitions"
+  ]
+}
